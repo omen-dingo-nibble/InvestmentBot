@@ -167,7 +167,7 @@ def users():
     )
 
 
-@bp.route("/users/<int:user_id>")
+@bp.route("/users/<sint:user_id>")
 @login_required
 def user_detail(user_id: int):
     db = get_db()
@@ -175,11 +175,12 @@ def user_detail(user_id: int):
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for("main.users"))
-    transactions = db.list_transactions(user_id=user_id, limit=50)
-    investments = db.list_investments(user_id=user_id, limit=50)
+    transactions = db.list_transactions(user_id=user_id, limit=100)
+    investments = db.list_investments(user_id=user_id, limit=100)
     sessions = db.list_user_sessions(user_id=user_id, limit=50)
     last_session = db.get_user_last_session(user_id)
     referral_info = db.referral_stats(user_id)
+    plans = db.list_plans()
     return render_template(
         "user_detail.html",
         user=user,
@@ -188,11 +189,12 @@ def user_detail(user_id: int):
         sessions=sessions,
         last_session=last_session,
         referral_info=referral_info,
+        plans=plans,
         admin=get_current_admin(),
     )
 
 
-@bp.route("/users/<int:user_id>/ban", methods=["POST"])
+@bp.route("/users/<sint:user_id>/ban", methods=["POST"])
 @login_required
 def user_ban(user_id: int):
     db = get_db()
@@ -215,7 +217,7 @@ def user_ban(user_id: int):
     return redirect(url_for("main.user_detail", user_id=user_id))
 
 
-@bp.route("/users/<int:user_id>/adjust", methods=["POST"])
+@bp.route("/users/<sint:user_id>/adjust", methods=["POST"])
 @login_required
 def user_adjust_balance(user_id: int):
     db = get_db()
@@ -251,6 +253,463 @@ def user_adjust_balance(user_id: int):
             ip_address=request.remote_addr,
         )
         flash(f"Balance adjusted by {amount:+.2f}.", "success")
+    return redirect(url_for("main.user_detail", user_id=user_id))
+
+
+# ---------------------------------------------------------------------------
+# User — full field editor (super-admin)
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/edit", methods=["GET", "POST"])
+@login_required
+def user_edit(user_id: int):
+    db = get_db()
+    user = db.get_user(user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("main.users"))
+
+    if request.method == "POST":
+        import re
+        f = request.form
+
+        # ── Build the fields dict from form ──────────────────────────
+        fields: dict = {}
+
+        # Text fields
+        for key in ("username", "full_name", "referral_code"):
+            val = f.get(key, "").strip()
+            if val != str(user.get(key) or ""):
+                fields[key] = val or None
+
+        # Phone
+        phone_raw = f.get("phone", "").strip()
+        if phone_raw and phone_raw != (user.get("phone") or ""):
+            # Normalise
+            phone_digits = re.sub(r"[\s\-\(\)\.]+", "", phone_raw)
+            if not phone_digits.startswith("+"):
+                phone_digits = "+" + phone_digits
+            fields["phone"] = phone_digits
+
+        # Password (only if filled)
+        new_pw = f.get("new_password", "").strip()
+        if new_pw:
+            if len(new_pw) < 6:
+                flash("Password must be at least 6 characters.", "danger")
+                return redirect(url_for("main.user_edit", user_id=user_id))
+            from database import Database as _DB
+            fields["password_hash"] = _DB._hash_password(new_pw)
+
+        # referred_by
+        ref_by = f.get("referred_by", "").strip()
+        new_ref_by = int(ref_by) if ref_by.lstrip("-").isdigit() else None
+        if new_ref_by != user.get("referred_by"):
+            fields["referred_by"] = new_ref_by
+
+        # Numeric wallet fields (direct set)
+        num_fields = {
+            "balance": f.get("balance"),
+            "pending_balance": f.get("pending_balance"),
+            "total_deposited": f.get("total_deposited"),
+            "total_withdrawn": f.get("total_withdrawn"),
+            "total_invested": f.get("total_invested"),
+            "total_earned": f.get("total_earned"),
+        }
+        for k, v in num_fields.items():
+            if v is not None and v.strip() != "":
+                try:
+                    fv = float(v)
+                    if fv != float(user.get(k) or 0):
+                        fields[k] = fv
+                except ValueError:
+                    flash(f"Invalid value for {k}.", "danger")
+                    return redirect(url_for("main.user_edit", user_id=user_id))
+
+        # is_banned / is_admin flags
+        new_banned = 1 if f.get("is_banned") == "1" else 0
+        new_admin  = 1 if f.get("is_admin")  == "1" else 0
+        if new_banned != int(user.get("is_banned") or 0):
+            fields["is_banned"] = new_banned
+        if new_admin != int(user.get("is_admin") or 0):
+            fields["is_admin"] = new_admin
+
+        # created_at (datetime string → timestamp)
+        created_str = f.get("created_at", "").strip()
+        if created_str:
+            try:
+                from datetime import datetime, timezone
+                dt = datetime.strptime(created_str, "%Y-%m-%dT%H:%M")
+                ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
+                if ts != int(user.get("created_at") or 0):
+                    fields["created_at"] = ts
+            except ValueError:
+                flash("Invalid date format for Created At.", "danger")
+                return redirect(url_for("main.user_edit", user_id=user_id))
+
+        if fields:
+            db.update_user_fields(user_id, **fields)
+            db.log_audit(
+                action="edit_user",
+                admin_id=session.get("admin_id"),
+                admin_name=session.get("admin_name"),
+                target_type="user",
+                target_id=str(user_id),
+                details=f"Edited fields: {', '.join(fields.keys())}",
+                ip_address=request.remote_addr,
+            )
+            flash(f"User #{user_id} updated — {len(fields)} field(s) changed.", "success")
+        else:
+            flash("No changes detected.", "info")
+
+        return redirect(url_for("main.user_detail", user_id=user_id))
+
+    # GET — render the edit form
+    plans = db.list_plans()
+    return render_template(
+        "user_edit.html",
+        user=user,
+        plans=plans,
+        admin=get_current_admin(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# User — reset password (quick action)
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/reset-password", methods=["POST"])
+@login_required
+def user_reset_password(user_id: int):
+    db = get_db()
+    user = db.get_user(user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("main.users"))
+    new_pw = request.form.get("new_password", "").strip()
+    if len(new_pw) < 6:
+        flash("Password must be at least 6 characters.", "danger")
+    else:
+        db.update_user_password(user_id, new_pw)
+        db.log_audit(
+            action="reset_user_password",
+            admin_id=session.get("admin_id"),
+            admin_name=session.get("admin_name"),
+            target_type="user",
+            target_id=str(user_id),
+            details="Admin reset user password",
+            ip_address=request.remote_addr,
+        )
+        flash(f"Password for user #{user_id} has been reset.", "success")
+    return redirect(url_for("main.user_detail", user_id=user_id))
+
+
+# ---------------------------------------------------------------------------
+# Transaction — edit
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/transactions/<int:tx_id>/edit", methods=["POST"])
+@login_required
+def transaction_edit(user_id: int, tx_id: int):
+    db = get_db()
+    tx = db.get_transaction(tx_id)
+    if not tx or tx["user_id"] != user_id:
+        flash("Transaction not found.", "danger")
+        return redirect(url_for("main.user_detail", user_id=user_id))
+
+    f = request.form
+    fields: dict = {}
+
+    for key in ("tx_type", "currency", "crypto_currency", "network",
+                "wallet_address", "tx_hash", "status", "note"):
+        val = f.get(key, "").strip()
+        if val != str(tx.get(key) or ""):
+            fields[key] = val or None
+
+    amt = f.get("amount", "").strip()
+    if amt:
+        try:
+            fv = float(amt)
+            if fv != float(tx.get("amount") or 0):
+                fields["amount"] = fv
+        except ValueError:
+            flash("Invalid amount.", "danger")
+            return redirect(url_for("main.user_detail", user_id=user_id))
+
+    created_str = f.get("created_at", "").strip()
+    if created_str:
+        try:
+            from datetime import datetime, timezone
+            dt = datetime.strptime(created_str, "%Y-%m-%dT%H:%M")
+            ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
+            if ts != int(tx.get("created_at") or 0):
+                fields["created_at"] = ts
+        except ValueError:
+            flash("Invalid date format.", "danger")
+            return redirect(url_for("main.user_detail", user_id=user_id))
+
+    if fields:
+        db.update_transaction_full(tx_id, **fields)
+        db.log_audit(
+            action="edit_transaction",
+            admin_id=session.get("admin_id"),
+            admin_name=session.get("admin_name"),
+            target_type="transaction",
+            target_id=str(tx_id),
+            details=f"Edited fields: {', '.join(fields.keys())}",
+            ip_address=request.remote_addr,
+        )
+        flash(f"Transaction #{tx_id} updated.", "success")
+    else:
+        flash("No changes.", "info")
+    return redirect(url_for("main.user_detail", user_id=user_id))
+
+
+# ---------------------------------------------------------------------------
+# Transaction — delete
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/transactions/<int:tx_id>/delete", methods=["POST"])
+@login_required
+def transaction_delete(user_id: int, tx_id: int):
+    db = get_db()
+    tx = db.get_transaction(tx_id)
+    if not tx or tx["user_id"] != user_id:
+        flash("Transaction not found.", "danger")
+        return redirect(url_for("main.user_detail", user_id=user_id))
+    db.delete_transaction(tx_id)
+    db.log_audit(
+        action="delete_transaction",
+        admin_id=session.get("admin_id"),
+        admin_name=session.get("admin_name"),
+        target_type="transaction",
+        target_id=str(tx_id),
+        details=f"Deleted tx #{tx_id} ({tx['tx_type']} {tx['amount']:+.2f})",
+        ip_address=request.remote_addr,
+    )
+    flash(f"Transaction #{tx_id} deleted.", "warning")
+    return redirect(url_for("main.user_detail", user_id=user_id))
+
+
+# ---------------------------------------------------------------------------
+# Transaction — create (inject new tx for user)
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/transactions/create", methods=["POST"])
+@login_required
+def transaction_create(user_id: int):
+    db = get_db()
+    user = db.get_user(user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("main.users"))
+
+    f = request.form
+    try:
+        amount = float(f.get("amount", 0))
+    except (ValueError, TypeError):
+        flash("Invalid amount.", "danger")
+        return redirect(url_for("main.user_detail", user_id=user_id))
+
+    tx_id = db.create_transaction(
+        user_id=user_id,
+        tx_type=f.get("tx_type", "adjustment").strip(),
+        amount=amount,
+        status=f.get("status", "completed").strip(),
+        currency=f.get("currency", "PHP").strip() or "PHP",
+        crypto_currency=f.get("crypto_currency", "").strip() or None,
+        wallet_address=f.get("wallet_address", "").strip() or None,
+        tx_hash=f.get("tx_hash", "").strip() or None,
+        note=f.get("note", "").strip() or f"Admin-injected by {session.get('admin_name')}",
+        admin_id=session.get("admin_id"),
+    )
+
+    # Optionally apply balance delta when status=completed
+    if f.get("apply_balance") == "1":
+        db.update_balance(user_id, amount)
+
+    db.log_audit(
+        action="create_transaction",
+        admin_id=session.get("admin_id"),
+        admin_name=session.get("admin_name"),
+        target_type="transaction",
+        target_id=str(tx_id),
+        details=f"Injected tx #{tx_id} ({f.get('tx_type')} {amount:+.2f}) for user {user_id}",
+        ip_address=request.remote_addr,
+    )
+    flash(f"Transaction #{tx_id} created.", "success")
+    return redirect(url_for("main.user_detail", user_id=user_id))
+
+
+# ---------------------------------------------------------------------------
+# Investment — edit
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/investments/<int:inv_id>/edit", methods=["POST"])
+@login_required
+def investment_edit(user_id: int, inv_id: int):
+    db = get_db()
+    inv = db.get_investment(inv_id)
+    if not inv or inv["user_id"] != user_id:
+        flash("Investment not found.", "danger")
+        return redirect(url_for("main.user_detail", user_id=user_id))
+
+    f = request.form
+    fields: dict = {}
+
+    for key in ("plan_name", "status"):
+        val = f.get(key, "").strip()
+        if val and val != str(inv.get(key) or ""):
+            fields[key] = val
+
+    for key in ("principal", "daily_roi_percent", "accrued_earnings", "payout_amount"):
+        val = f.get(key, "").strip()
+        if val:
+            try:
+                fv = float(val)
+                if fv != float(inv.get(key) or 0):
+                    fields[key] = fv
+            except ValueError:
+                flash(f"Invalid value for {key}.", "danger")
+                return redirect(url_for("main.user_detail", user_id=user_id))
+
+    for key in ("duration_days", "capital_return"):
+        val = f.get(key, "").strip()
+        if val:
+            try:
+                iv = int(val)
+                if iv != int(inv.get(key) or 0):
+                    fields[key] = iv
+            except ValueError:
+                pass
+
+    from datetime import datetime, timezone
+    for dt_key in ("started_at", "expires_at", "completed_at"):
+        val = f.get(dt_key, "").strip()
+        if val:
+            try:
+                dt = datetime.strptime(val, "%Y-%m-%dT%H:%M")
+                ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
+                if ts != int(inv.get(dt_key) or 0):
+                    fields[dt_key] = ts
+            except ValueError:
+                pass
+
+    if fields:
+        db.update_investment_full(inv_id, **fields)
+        db.log_audit(
+            action="edit_investment",
+            admin_id=session.get("admin_id"),
+            admin_name=session.get("admin_name"),
+            target_type="investment",
+            target_id=str(inv_id),
+            details=f"Edited fields: {', '.join(fields.keys())}",
+            ip_address=request.remote_addr,
+        )
+        flash(f"Investment #{inv_id} updated.", "success")
+    else:
+        flash("No changes.", "info")
+    return redirect(url_for("main.user_detail", user_id=user_id))
+
+
+# ---------------------------------------------------------------------------
+# Investment — delete
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/investments/<int:inv_id>/delete", methods=["POST"])
+@login_required
+def investment_delete(user_id: int, inv_id: int):
+    db = get_db()
+    inv = db.get_investment(inv_id)
+    if not inv or inv["user_id"] != user_id:
+        flash("Investment not found.", "danger")
+        return redirect(url_for("main.user_detail", user_id=user_id))
+    db.delete_investment(inv_id)
+    db.log_audit(
+        action="delete_investment",
+        admin_id=session.get("admin_id"),
+        admin_name=session.get("admin_name"),
+        target_type="investment",
+        target_id=str(inv_id),
+        details=f"Deleted investment #{inv_id} ({inv['plan_name']} ₱{inv['principal']:.2f})",
+        ip_address=request.remote_addr,
+    )
+    flash(f"Investment #{inv_id} deleted.", "warning")
+    return redirect(url_for("main.user_detail", user_id=user_id))
+
+
+# ---------------------------------------------------------------------------
+# Investment — create manually
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/investments/create", methods=["POST"])
+@login_required
+def investment_create(user_id: int):
+    db = get_db()
+    user = db.get_user(user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("main.users"))
+
+    f = request.form
+    from datetime import datetime, timezone
+    import time as _time
+
+    try:
+        principal = float(f.get("principal", 0))
+        daily_roi = float(f.get("daily_roi_percent", 1))
+        duration  = int(f.get("duration_days", 30))
+    except (ValueError, TypeError):
+        flash("Invalid principal, ROI or duration.", "danger")
+        return redirect(url_for("main.user_detail", user_id=user_id))
+
+    plan_name     = f.get("plan_name", "Custom Plan").strip() or "Custom Plan"
+    capital_ret   = 1 if f.get("capital_return") == "1" else 0
+    status        = f.get("status", "active").strip()
+    deduct_balance= f.get("deduct_balance") == "1"
+
+    started_str = f.get("started_at", "").strip()
+    try:
+        started_dt = datetime.strptime(started_str, "%Y-%m-%dT%H:%M")
+        started_ts = int(started_dt.replace(tzinfo=timezone.utc).timestamp())
+    except (ValueError, TypeError):
+        started_ts = int(_time.time())
+
+    expires_ts = started_ts + duration * 86400
+
+    if deduct_balance and principal > float(user["balance"]):
+        flash("Principal exceeds user balance.", "danger")
+        return redirect(url_for("main.user_detail", user_id=user_id))
+
+    from database import _now
+    with db._lock:
+        cur = db.execute(
+            """INSERT INTO investments
+               (user_id, plan_id, plan_name, principal, daily_roi_percent,
+                duration_days, capital_return, accrued_earnings, payout_amount,
+                status, started_at, expires_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?)""",
+            (user_id, 0, plan_name, principal, daily_roi, duration,
+             capital_ret, status, started_ts, expires_ts),
+        )
+        inv_id = cur.lastrowid
+
+    if deduct_balance:
+        db.update_balance(user_id, -principal)
+        db.execute(
+            "UPDATE users SET total_invested = total_invested + ?, updated_at = ? WHERE user_id = ?",
+            (principal, _now(), user_id),
+        )
+
+    db.log_audit(
+        action="create_investment",
+        admin_id=session.get("admin_id"),
+        admin_name=session.get("admin_name"),
+        target_type="investment",
+        target_id=str(inv_id),
+        details=f"Admin-created investment #{inv_id} ({plan_name} ₱{principal:.2f}) for user {user_id}",
+        ip_address=request.remote_addr,
+    )
+    flash(f"Investment #{inv_id} created.", "success")
     return redirect(url_for("main.user_detail", user_id=user_id))
 
 

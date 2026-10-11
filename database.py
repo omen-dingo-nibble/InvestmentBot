@@ -482,6 +482,77 @@ class Database:
             (1 if admin else 0, _now(), user_id),
         )
 
+    def update_user_fields(self, user_id: int, **fields) -> bool:
+        """Update arbitrary user fields directly (super-admin operation).
+
+        Accepted keys: username, full_name, phone, password_hash,
+                        referral_code, referred_by, balance, pending_balance,
+                        total_deposited, total_withdrawn, total_invested,
+                        total_earned, is_banned, is_admin, created_at.
+        Returns True on success.
+        """
+        ALLOWED = {
+            "username", "full_name", "phone", "password_hash",
+            "referral_code", "referred_by", "balance", "pending_balance",
+            "total_deposited", "total_withdrawn", "total_invested",
+            "total_earned", "is_banned", "is_admin", "created_at",
+        }
+        safe = {k: v for k, v in fields.items() if k in ALLOWED}
+        if not safe:
+            return False
+        safe["updated_at"] = _now()
+        cols = ", ".join(f"{k} = ?" for k in safe)
+        vals = list(safe.values()) + [user_id]
+        with self._lock:
+            self.execute(f"UPDATE users SET {cols} WHERE user_id = ?", vals)
+        return True
+
+    def set_user_balance_direct(self, user_id: int, new_balance: float) -> None:
+        """Set balance to an exact value (bypasses delta logic)."""
+        self.execute(
+            "UPDATE users SET balance = ?, updated_at = ? WHERE user_id = ?",
+            (new_balance, _now(), user_id),
+        )
+
+    def update_transaction_full(self, tx_id: int, **fields) -> bool:
+        """Full edit of any transaction field (super-admin operation)."""
+        ALLOWED = {
+            "tx_type", "amount", "currency", "crypto_currency", "network",
+            "wallet_address", "tx_hash", "receipt_file_id", "status",
+            "note", "admin_id", "created_at",
+        }
+        safe = {k: v for k, v in fields.items() if k in ALLOWED}
+        if not safe:
+            return False
+        safe["updated_at"] = _now()
+        cols = ", ".join(f"{k} = ?" for k in safe)
+        vals = list(safe.values()) + [tx_id]
+        self.execute(f"UPDATE transactions SET {cols} WHERE id = ?", vals)
+        return True
+
+    def delete_transaction(self, tx_id: int) -> bool:
+        cur = self.execute("DELETE FROM transactions WHERE id = ?", (tx_id,))
+        return cur.rowcount > 0
+
+    def update_investment_full(self, inv_id: int, **fields) -> bool:
+        """Full edit of any investment field (super-admin operation)."""
+        ALLOWED = {
+            "plan_name", "principal", "daily_roi_percent", "duration_days",
+            "capital_return", "accrued_earnings", "payout_amount",
+            "status", "started_at", "expires_at", "completed_at",
+        }
+        safe = {k: v for k, v in fields.items() if k in ALLOWED}
+        if not safe:
+            return False
+        cols = ", ".join(f"{k} = ?" for k in safe)
+        vals = list(safe.values()) + [inv_id]
+        self.execute(f"UPDATE investments SET {cols} WHERE id = ?", vals)
+        return True
+
+    def delete_investment(self, inv_id: int) -> bool:
+        cur = self.execute("DELETE FROM investments WHERE id = ?", (inv_id,))
+        return cur.rowcount > 0
+
     def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
         return self.query_one("SELECT * FROM users WHERE user_id = ?", (user_id,))
 

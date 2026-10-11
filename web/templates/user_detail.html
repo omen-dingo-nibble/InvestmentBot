@@ -1,38 +1,67 @@
 {% extends "base.html" %}
-{% block title %}{{ user.full_name or user.username or user.user_id }}{% endblock %}
-{% block content %}
+{% block title %}User #{{ user.user_id }}{% endblock %}
 
-<div class="page-header">
+{% block content %}
+{% set ts_to_input = namespace() %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
     <div>
-        <h4>
+        <h4 class="mb-0">
             <i class="bi bi-person-circle me-2 text-green"></i>
-            {{ user.full_name or user.username or user.user_id }}
+            {{ user.full_name or user.username or ('User #' ~ user.user_id) }}
         </h4>
-        <small style="color:var(--gyo-muted);">ID: {{ user.user_id }}{% if user.username %} · @{{ user.username }}{% endif %}</small>
+        <small style="color:var(--gyo-muted);">
+            ID: <code>{{ user.user_id }}</code>
+            {% if user.username %} · @{{ user.username }}{% endif %}
+            {% if user.phone %} · {{ user.phone }}{% endif %}
+            {% if user.is_banned %}<span class="badge badge-rejected ms-1">BANNED</span>{% endif %}
+            {% if user.is_admin %}<span class="badge ms-1" style="background:rgba(124,58,237,.2);color:#a78bfa;">ADMIN</span>{% endif %}
+        </small>
     </div>
-    <a href="{{ url_for('main.users') }}" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>戻る
-    </a>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('main.user_edit', user_id=user.user_id) }}" class="btn btn-gold btn-sm">
+            <i class="bi bi-pencil-square me-1"></i>Edit Profile
+        </a>
+        <form method="POST" action="{{ url_for('main.user_ban', user_id=user.user_id) }}"
+              style="display:inline;" onsubmit="return confirm('{{ 'Unban' if user.is_banned else 'Ban' }} user?')">
+            <button class="btn btn-sm {{ 'btn-outline-success' if user.is_banned else 'btn-outline-danger' }}">
+                <i class="bi bi-{{ 'unlock' if user.is_banned else 'slash-circle' }} me-1"></i>
+                {{ 'Unban' if user.is_banned else 'Ban' }}
+            </button>
+        </form>
+        <a href="{{ url_for('main.users') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+    </div>
 </div>
 
-<div class="row g-4 mb-4">
+<!-- ══════════════════════════════════════════════════════════
+     TOP ROW: Balances | Profile | Quick Actions
+══════════════════════════════════════════════════════════ -->
+<div class="row g-3 mb-4">
+
     <!-- Balances -->
-    <div class="col-md-4">
+    <div class="col-lg-4">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-wallet2 me-2 text-green"></i>残高</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-wallet2 me-2 text-green"></i>Balances</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="togglePanel('balanceEditPanel')">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <div style="font-size:.72rem;color:var(--gyo-muted);margin-bottom:4px;">現在の残高</div>
-                    <div style="font-size:1.7rem;font-weight:800;color:var(--gyo-green);">{{ user.balance | money_php }}</div>
+                    <div style="font-size:.72rem;color:var(--gyo-muted);margin-bottom:2px;">Balance</div>
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--gyo-green);">{{ user.balance | money_php }}</div>
                 </div>
-                <div class="row g-2 text-center">
-                    {% set bal_rows = [
-                        (user.total_deposited, '入金合計'),
-                        (user.total_withdrawn, '出金合計'),
-                        (user.total_invested, '投資合計'),
-                        (user.total_earned, '利益合計'),
+                <div class="row g-2">
+                    {% for val, lbl in [
+                        (user.total_deposited, 'Deposited'),
+                        (user.total_withdrawn, 'Withdrawn'),
+                        (user.total_invested,  'Invested'),
+                        (user.total_earned,    'Earned'),
+                        (user.pending_balance, 'Pending'),
                     ] %}
-                    {% for val, lbl in bal_rows %}
                     <div class="col-6">
                         <div class="stat-card p-2">
                             <div class="fw-bold" style="font-size:.85rem;">{{ val | money }}</div>
@@ -41,161 +70,630 @@
                     </div>
                     {% endfor %}
                 </div>
+
+                <!-- Inline balance edit panel -->
+                <div id="balanceEditPanel" class="edit-panel mt-3" style="display:none;">
+                    <form method="POST" action="{{ url_for('main.user_adjust_balance', user_id=user.user_id) }}">
+                        <div style="font-size:.75rem;font-weight:700;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+                            Delta Adjust (+ or -)
+                        </div>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" step="0.01" name="amount" class="form-control"
+                                   placeholder="+500 or -100" required>
+                        </div>
+                        <input type="text" name="note" class="form-control form-control-sm mb-2"
+                               placeholder="Reason (optional)">
+                        <button type="submit" class="btn btn-gold btn-sm w-100">Apply Delta</button>
+                    </form>
+                    <hr style="border-color:var(--gyo-border);">
+                    <form method="POST" action="{{ url_for('main.user_edit', user_id=user.user_id) }}">
+                        <div style="font-size:.75rem;font-weight:700;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+                            Set Exact Values
+                        </div>
+                        {% for field, label, val in [
+                            ('balance',          'Balance',    user.balance),
+                            ('pending_balance',  'Pending',    user.pending_balance),
+                            ('total_deposited',  'Deposited',  user.total_deposited),
+                            ('total_withdrawn',  'Withdrawn',  user.total_withdrawn),
+                            ('total_invested',   'Invested',   user.total_invested),
+                            ('total_earned',     'Earned',     user.total_earned),
+                        ] %}
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text" style="min-width:90px;font-size:.72rem;">{{ label }}</span>
+                            <input type="number" step="0.01" name="{{ field }}"
+                                   value="{{ '%.2f'|format(val or 0) }}" class="form-control form-control-sm">
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-sm w-100 mt-2"
+                                style="background:var(--gyo-matcha);color:#fff;">Set All Values</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Account info -->
-    <div class="col-md-4">
+    <!-- Profile Info -->
+    <div class="col-lg-4">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-info-circle me-2 text-green"></i>アカウント情報</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-info-circle me-2 text-green"></i>Profile</span>
+                <a href="{{ url_for('main.user_edit', user_id=user.user_id) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil"></i>
+                </a>
+            </div>
             <div class="card-body">
-                <dl class="row mb-0" style="font-size:.835rem;">
+                <dl class="row mb-0" style="font-size:.835rem;row-gap:4px;">
                     <dt class="col-5" style="color:var(--gyo-muted);">User ID</dt>
                     <dd class="col-7"><code>{{ user.user_id }}</code></dd>
+
                     <dt class="col-5" style="color:var(--gyo-muted);">Username</dt>
                     <dd class="col-7">{{ ('@' + user.username) if user.username else '—' }}</dd>
-                    <dt class="col-5" style="color:var(--gyo-muted);">氏名</dt>
+
+                    <dt class="col-5" style="color:var(--gyo-muted);">Full Name</dt>
                     <dd class="col-7">{{ user.full_name or '—' }}</dd>
-                    <dt class="col-5" style="color:var(--gyo-muted);">紹介コード</dt>
+
+                    <dt class="col-5" style="color:var(--gyo-muted);">Phone</dt>
+                    <dd class="col-7">{{ user.phone or '—' }}</dd>
+
+                    <dt class="col-5" style="color:var(--gyo-muted);">Password</dt>
+                    <dd class="col-7">
+                        {% if user.password_hash %}
+                        <span class="badge badge-active">Set</span>
+                        {% else %}
+                        <span class="badge badge-rejected">None</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-5" style="color:var(--gyo-muted);">Referral Code</dt>
                     <dd class="col-7"><code>{{ user.referral_code }}</code></dd>
-                    <dt class="col-5" style="color:var(--gyo-muted);">紹介者</dt>
+
+                    <dt class="col-5" style="color:var(--gyo-muted);">Referred By</dt>
                     <dd class="col-7">
                         {% if user.referred_by %}
                         <a href="{{ url_for('main.user_detail', user_id=user.referred_by) }}" style="color:var(--gyo-green);">
-                            {{ user.referred_by }}
+                            #{{ user.referred_by }}
                         </a>
                         {% else %}—{% endif %}
                     </dd>
-                    <dt class="col-5" style="color:var(--gyo-muted);">登録日</dt>
+
+                    <dt class="col-5" style="color:var(--gyo-muted);">Registered</dt>
                     <dd class="col-7">{{ user.created_at | ts_to_date }}</dd>
-                    <dt class="col-5" style="color:var(--gyo-muted);">状態</dt>
+
+                    <dt class="col-5" style="color:var(--gyo-muted);">Last Active</dt>
+                    <dd class="col-7">{{ last_session.created_at | timeago if last_session else '—' }}</dd>
+
+                    <dt class="col-5" style="color:var(--gyo-muted);">Status</dt>
                     <dd class="col-7">
                         {% if user.is_banned %}<span class="badge badge-rejected">Banned</span>
                         {% elif user.is_admin %}<span class="badge" style="background:rgba(124,58,237,.2);color:#a78bfa;">Admin</span>
                         {% else %}<span class="badge badge-active">Active</span>{% endif %}
                     </dd>
-                    {% if last_session %}
-                    <dt class="col-5" style="color:var(--gyo-muted);">最終アクティブ</dt>
-                    <dd class="col-7">{{ last_session.created_at | timeago }}</dd>
-                    {% endif %}
                 </dl>
             </div>
         </div>
     </div>
 
-    <!-- Actions -->
-    <div class="col-md-4">
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-tools me-2 text-green"></i>管理操作</div>
-            <div class="card-body d-flex flex-column gap-3">
+            <div class="card-header"><i class="bi bi-tools me-2 text-green"></i>Quick Actions</div>
+            <div class="card-body d-flex flex-column gap-2">
+
+                <!-- Reset password -->
+                <button class="btn btn-outline-secondary btn-sm" onclick="togglePanel('pwResetPanel')">
+                    <i class="bi bi-key me-1"></i>Reset Password
+                </button>
+                <div id="pwResetPanel" class="edit-panel" style="display:none;">
+                    <form method="POST" action="{{ url_for('main.user_reset_password', user_id=user.user_id) }}">
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="text" name="new_password" class="form-control"
+                                   placeholder="New password (min 6 chars)" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-outline-warning w-100">Set Password</button>
+                    </form>
+                </div>
+
+                <hr style="border-color:var(--gyo-border);margin:4px 0;">
+
+                <!-- Ban toggle -->
                 <form method="POST" action="{{ url_for('main.user_ban', user_id=user.user_id) }}"
                       onsubmit="return confirm('{{ 'Unban' if user.is_banned else 'Ban' }} this user?')">
-                    <button class="btn w-100 {{ 'btn-outline-success' if user.is_banned else 'btn-outline-danger' }}">
-                        <i class="bi bi-{{ 'unlock' if user.is_banned else 'slash-circle' }} me-2"></i>
-                        {{ 'BANを解除' if user.is_banned else 'ユーザーをBAN' }}
+                    <button class="btn w-100 btn-sm {{ 'btn-outline-success' if user.is_banned else 'btn-outline-danger' }}">
+                        <i class="bi bi-{{ 'unlock' if user.is_banned else 'slash-circle' }} me-1"></i>
+                        {{ 'Unban User' if user.is_banned else 'Ban User' }}
                     </button>
                 </form>
 
-                <div class="card" style="background:var(--gyo-surface);">
-                    <div class="card-body p-3">
-                        <h6 class="mb-2" style="font-size:.8rem;color:var(--gyo-muted);">残高調整 Adjust Balance</h6>
-                        <form method="POST" action="{{ url_for('main.user_adjust_balance', user_id=user.user_id) }}">
-                            <div class="input-group input-group-sm mb-2">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" step="0.01" name="amount" class="form-control"
-                                       placeholder="+500 または -100" required>
+                <hr style="border-color:var(--gyo-border);margin:4px 0;">
+
+                <!-- Create transaction -->
+                <button class="btn btn-sm text-green" style="background:var(--gyo-glow);border:1px solid var(--gyo-border);"
+                        onclick="togglePanel('newTxPanel')">
+                    <i class="bi bi-plus-circle me-1"></i>Inject Transaction
+                </button>
+                <div id="newTxPanel" class="edit-panel" style="display:none;">
+                    <form method="POST" action="{{ url_for('main.transaction_create', user_id=user.user_id) }}">
+                        <div class="row g-1 mb-1">
+                            <div class="col-6">
+                                <select name="tx_type" class="form-select form-select-sm">
+                                    <option value="deposit">deposit</option>
+                                    <option value="withdrawal">withdrawal</option>
+                                    <option value="earning">earning</option>
+                                    <option value="referral">referral</option>
+                                    <option value="adjustment" selected>adjustment</option>
+                                    <option value="signup_bonus">signup_bonus</option>
+                                </select>
                             </div>
-                            <input type="text" name="note" class="form-control form-control-sm mb-2"
-                                   placeholder="備考 (任意)">
-                            <button type="submit" class="btn btn-gold btn-sm w-100">調整を適用</button>
-                        </form>
-                    </div>
+                            <div class="col-6">
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="completed" selected>completed</option>
+                                    <option value="pending">pending</option>
+                                    <option value="rejected">rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" step="0.01" name="amount" class="form-control" placeholder="Amount (+ or -)" required>
+                        </div>
+                        <input type="text" name="note" class="form-control form-control-sm mb-1" placeholder="Note">
+                        <div class="form-check form-check-sm mb-2 ms-1">
+                            <input class="form-check-input" type="checkbox" name="apply_balance" value="1" id="applyBal" checked>
+                            <label class="form-check-label" for="applyBal" style="font-size:.78rem;">Apply delta to balance</label>
+                        </div>
+                        <button type="submit" class="btn btn-gold btn-sm w-100">Create</button>
+                    </form>
                 </div>
+
+                <hr style="border-color:var(--gyo-border);margin:4px 0;">
+
+                <!-- Create investment -->
+                <button class="btn btn-sm" style="background:rgba(52,211,153,.1);color:#34d399;border:1px solid rgba(52,211,153,.2);"
+                        onclick="togglePanel('newInvPanel')">
+                    <i class="bi bi-bar-chart-line me-1"></i>Create Investment
+                </button>
+                <div id="newInvPanel" class="edit-panel" style="display:none;">
+                    <form method="POST" action="{{ url_for('main.investment_create', user_id=user.user_id) }}">
+                        <input type="text" name="plan_name" class="form-control form-control-sm mb-1"
+                               placeholder="Plan name" value="Custom Plan" required>
+                        <div class="row g-1 mb-1">
+                            <div class="col-4">
+                                <input type="number" step="0.01" name="principal" class="form-control form-control-sm"
+                                       placeholder="₱ Principal" required>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" step="0.01" name="daily_roi_percent" class="form-control form-control-sm"
+                                       placeholder="% /day" value="2.0" required>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" name="duration_days" class="form-control form-control-sm"
+                                       placeholder="Days" value="30" required>
+                            </div>
+                        </div>
+                        <div class="row g-1 mb-1">
+                            <div class="col-6">
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="active" selected>active</option>
+                                    <option value="completed">completed</option>
+                                    <option value="cancelled">cancelled</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select name="capital_return" class="form-select form-select-sm">
+                                    <option value="1" selected>Capital returned</option>
+                                    <option value="0">No return</option>
+                                </select>
+                            </div>
+                        </div>
+                        <label style="font-size:.72rem;color:var(--gyo-muted);">Start date (UTC)</label>
+                        <input type="datetime-local" name="started_at" class="form-control form-control-sm mb-1">
+                        <div class="form-check form-check-sm mb-2 ms-1">
+                            <input class="form-check-input" type="checkbox" name="deduct_balance" value="1" id="deductBal" checked>
+                            <label class="form-check-label" for="deductBal" style="font-size:.78rem;">Deduct principal from balance</label>
+                        </div>
+                        <button type="submit" class="btn btn-sm w-100"
+                                style="background:var(--gyo-matcha);color:#fff;">Create Investment</button>
+                    </form>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
 
-<!-- Transactions -->
+<!-- ══════════════════════════════════════════════════════════
+     TRANSACTIONS TABLE with inline edit
+══════════════════════════════════════════════════════════ -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-list-ul me-2 text-green"></i>取引履歴</div>
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-list-ul me-2 text-green"></i>Transactions
+            <span class="badge" style="background:var(--gyo-glow);color:var(--gyo-green);margin-left:4px;">{{ transactions|length }}</span>
+        </span>
+        <button class="btn btn-sm" style="background:var(--gyo-glow);color:var(--gyo-green);border:1px solid var(--gyo-border);"
+                onclick="togglePanel('newTxPanel');this.closest('.card').querySelector('#newTxPanel')?.scrollIntoView({behavior:'smooth'})">
+            <i class="bi bi-plus"></i> Add
+        </button>
+    </div>
     <div class="table-responsive">
-        <table class="table table-sm mb-0">
-            <thead><tr><th>#</th><th>種別</th><th>金額</th><th>通貨</th><th>状態</th><th>日時</th><th>備考</th></tr></thead>
+        <table class="table table-sm mb-0" id="txTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Note</th>
+                    <th style="width:80px;">Actions</th>
+                </tr>
+            </thead>
             <tbody>
             {% for tx in transactions %}
-            <tr>
-                <td><code>#{{ tx.id }}</code></td>
-                <td>{{ tx.tx_type }}</td>
-                <td class="{{ 'text-green' if tx.amount > 0 else '' }}" style="{{ 'color:#f87171;' if tx.amount < 0 else '' }}">
+            <tr id="txRow{{ tx.id }}">
+                <td><code class="small">#{{ tx.id }}</code></td>
+                <td>
+                    <span class="badge" style="
+                        {% if tx.tx_type == 'deposit' %}background:rgba(29,185,84,.15);color:#52b788;
+                        {% elif tx.tx_type == 'withdrawal' %}background:rgba(239,68,68,.1);color:#f87171;
+                        {% elif tx.tx_type in ('earning','signup_bonus') %}background:rgba(212,168,83,.15);color:#d4a853;
+                        {% elif tx.tx_type == 'referral' %}background:rgba(96,165,250,.1);color:#60a5fa;
+                        {% else %}background:rgba(255,255,255,.05);color:var(--gyo-muted);{% endif %}
+                    ">{{ tx.tx_type }}</span>
+                </td>
+                <td class="{{ 'text-green' if tx.amount > 0 else '' }}"
+                    style="{{ 'color:#f87171;' if tx.amount < 0 else '' }}">
                     {{ '+' if tx.amount > 0 else '' }}{{ tx.amount | money }}
                 </td>
-                <td>{{ tx.currency }}</td>
+                <td><small>{{ tx.currency }}</small></td>
                 <td><span class="badge badge-{{ tx.status }}">{{ tx.status }}</span></td>
-                <td><small style="color:var(--gyo-muted);">{{ tx.created_at | timeago }}</small></td>
-                <td><small style="color:var(--gyo-muted);">{{ (tx.note or '')[:40] }}</small></td>
+                <td><small style="color:var(--gyo-muted);">{{ tx.created_at | ts_to_date }}</small></td>
+                <td><small style="color:var(--gyo-muted);">{{ (tx.note or '')[:35] }}{% if tx.note and tx.note|length > 35 %}…{% endif %}</small></td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm" style="padding:2px 7px;background:rgba(212,168,83,.1);color:#d4a853;border:1px solid rgba(212,168,83,.2);"
+                                onclick="togglePanel('txEdit{{ tx.id }}')" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="POST" action="{{ url_for('main.transaction_delete', user_id=user.user_id, tx_id=tx.id) }}"
+                              onsubmit="return confirm('Delete transaction #{{ tx.id }}? This cannot be undone.')">
+                            <button class="btn btn-sm" style="padding:2px 7px;background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);"
+                                    title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <!-- Inline edit row -->
+            <tr id="txEdit{{ tx.id }}" style="display:none;background:var(--gyo-surface);">
+                <td colspan="8" style="padding:14px 16px;">
+                    <form method="POST" action="{{ url_for('main.transaction_edit', user_id=user.user_id, tx_id=tx.id) }}">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-sm-2">
+                                <label class="edit-label">Type</label>
+                                <select name="tx_type" class="form-select form-select-sm">
+                                    {% for t in ['deposit','withdrawal','earning','referral','adjustment','signup_bonus','investment'] %}
+                                    <option value="{{ t }}" {{ 'selected' if tx.tx_type == t }}>{{ t }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Amount (₱)</label>
+                                <input type="number" step="0.01" name="amount"
+                                       value="{{ '%.2f'|format(tx.amount) }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Status</label>
+                                <select name="status" class="form-select form-select-sm">
+                                    {% for s in ['pending','completed','rejected','approved','failed'] %}
+                                    <option value="{{ s }}" {{ 'selected' if tx.status == s }}>{{ s }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Currency</label>
+                                <input type="text" name="currency" value="{{ tx.currency }}"
+                                       class="form-control form-control-sm" maxlength="10">
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Crypto</label>
+                                <input type="text" name="crypto_currency"
+                                       value="{{ tx.crypto_currency or '' }}"
+                                       class="form-control form-control-sm" placeholder="BTC, ETH…">
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Date (UTC)</label>
+                                <input type="datetime-local" name="created_at"
+                                       value="{{ tx.created_at | ts_to_input_val }}"
+                                       class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="edit-label">TX Hash</label>
+                                <input type="text" name="tx_hash" value="{{ tx.tx_hash or '' }}"
+                                       class="form-control form-control-sm" placeholder="blockchain hash">
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="edit-label">Wallet Address</label>
+                                <input type="text" name="wallet_address" value="{{ tx.wallet_address or '' }}"
+                                       class="form-control form-control-sm" placeholder="0x…">
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="edit-label">Note</label>
+                                <input type="text" name="note" value="{{ tx.note or '' }}"
+                                       class="form-control form-control-sm" placeholder="Admin note">
+                            </div>
+                            <div class="col-12 d-flex gap-2 mt-1">
+                                <button type="submit" class="btn btn-gold btn-sm">
+                                    <i class="bi bi-check-lg me-1"></i>Save Changes
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        onclick="togglePanel('txEdit{{ tx.id }}')">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </td>
             </tr>
             {% else %}
-            <tr><td colspan="7" class="text-center py-3" style="color:var(--gyo-muted);">取引なし</td></tr>
+            <tr><td colspan="8" class="text-center py-3" style="color:var(--gyo-muted);">No transactions</td></tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Investments -->
+<!-- ══════════════════════════════════════════════════════════
+     INVESTMENTS TABLE with inline edit
+══════════════════════════════════════════════════════════ -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-bar-chart-line me-2 text-green"></i>投資履歴</div>
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-bar-chart-line me-2 text-green"></i>Investments
+            <span class="badge" style="background:var(--gyo-glow);color:var(--gyo-green);margin-left:4px;">{{ investments|length }}</span>
+        </span>
+    </div>
     <div class="table-responsive">
         <table class="table table-sm mb-0">
-            <thead><tr><th>#</th><th>プラン</th><th>元本</th><th>日利</th><th>状態</th><th>開始</th><th>満期</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Plan</th>
+                    <th>Principal</th>
+                    <th>ROI/day</th>
+                    <th>Duration</th>
+                    <th>Accrued</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Expires</th>
+                    <th style="width:80px;">Actions</th>
+                </tr>
+            </thead>
             <tbody>
             {% for inv in investments %}
-            <tr>
-                <td><code>#{{ inv.id }}</code></td>
-                <td>{{ inv.plan_name }}</td>
-                <td>{{ inv.principal | money }}</td>
-                <td class="text-green">{{ inv.daily_roi_percent }}%</td>
-                <td><span class="badge badge-{{ inv.status }}">{{ inv.status }}</span></td>
-                <td><small>{{ inv.started_at | timeago }}</small></td>
+            <tr id="invRow{{ inv.id }}">
+                <td><code class="small">#{{ inv.id }}</code></td>
+                <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ inv.plan_name }}">
+                    {{ inv.plan_name }}
+                </td>
+                <td class="text-green fw-bold">{{ inv.principal | money }}</td>
+                <td>{{ inv.daily_roi_percent }}%</td>
+                <td>{{ inv.duration_days }}d</td>
+                <td>{{ inv.accrued_earnings | money }}</td>
+                <td>
+                    <span class="badge
+                        {% if inv.status == 'active' %}badge-active
+                        {% elif inv.status == 'completed' %}badge-approved
+                        {% else %}badge-rejected{% endif %}">
+                        {{ inv.status }}
+                    </span>
+                </td>
+                <td><small>{{ inv.started_at | ts_to_date }}</small></td>
                 <td><small style="color:var(--gyo-muted);">{{ inv.expires_at | ts_to_date }}</small></td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm" style="padding:2px 7px;background:rgba(212,168,83,.1);color:#d4a853;border:1px solid rgba(212,168,83,.2);"
+                                onclick="togglePanel('invEdit{{ inv.id }}')" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="POST" action="{{ url_for('main.investment_delete', user_id=user.user_id, inv_id=inv.id) }}"
+                              onsubmit="return confirm('Delete investment #{{ inv.id }}?')">
+                            <button class="btn btn-sm" style="padding:2px 7px;background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);"
+                                    title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <!-- Inline edit row -->
+            <tr id="invEdit{{ inv.id }}" style="display:none;background:var(--gyo-surface);">
+                <td colspan="10" style="padding:14px 16px;">
+                    <form method="POST" action="{{ url_for('main.investment_edit', user_id=user.user_id, inv_id=inv.id) }}">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-sm-3">
+                                <label class="edit-label">Plan Name</label>
+                                <input type="text" name="plan_name" value="{{ inv.plan_name }}"
+                                       class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Principal (₱)</label>
+                                <input type="number" step="0.01" name="principal"
+                                       value="{{ '%.2f'|format(inv.principal) }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Daily ROI %</label>
+                                <input type="number" step="0.01" name="daily_roi_percent"
+                                       value="{{ inv.daily_roi_percent }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-1">
+                                <label class="edit-label">Days</label>
+                                <input type="number" name="duration_days"
+                                       value="{{ inv.duration_days }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Status</label>
+                                <select name="status" class="form-select form-select-sm">
+                                    {% for s in ['active','completed','cancelled'] %}
+                                    <option value="{{ s }}" {{ 'selected' if inv.status == s }}>{{ s }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Capital Return</label>
+                                <select name="capital_return" class="form-select form-select-sm">
+                                    <option value="1" {{ 'selected' if inv.capital_return == 1 }}>Yes</option>
+                                    <option value="0" {{ 'selected' if inv.capital_return == 0 }}>No</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Accrued (₱)</label>
+                                <input type="number" step="0.01" name="accrued_earnings"
+                                       value="{{ '%.2f'|format(inv.accrued_earnings or 0) }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Paid Out (₱)</label>
+                                <input type="number" step="0.01" name="payout_amount"
+                                       value="{{ '%.2f'|format(inv.payout_amount or 0) }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-3">
+                                <label class="edit-label">Started (UTC)</label>
+                                <input type="datetime-local" name="started_at"
+                                       value="{{ inv.started_at | ts_to_input_val }}"
+                                       class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-3">
+                                <label class="edit-label">Expires (UTC)</label>
+                                <input type="datetime-local" name="expires_at"
+                                       value="{{ inv.expires_at | ts_to_input_val }}"
+                                       class="form-control form-control-sm">
+                            </div>
+                            <div class="col-sm-2">
+                                <label class="edit-label">Completed (UTC)</label>
+                                <input type="datetime-local" name="completed_at"
+                                       value="{{ inv.completed_at | ts_to_input_val if inv.completed_at else '' }}"
+                                       class="form-control form-control-sm">
+                            </div>
+                            <div class="col-12 d-flex gap-2 mt-1">
+                                <button type="submit" class="btn btn-gold btn-sm">
+                                    <i class="bi bi-check-lg me-1"></i>Save
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        onclick="togglePanel('invEdit{{ inv.id }}')">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </td>
             </tr>
             {% else %}
-            <tr><td colspan="7" class="text-center py-3" style="color:var(--gyo-muted);">投資なし</td></tr>
+            <tr><td colspan="10" class="text-center py-3" style="color:var(--gyo-muted);">No investments</td></tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Referral -->
+<!-- ══════════════════════════════════════════════════════════
+     REFERRALS
+══════════════════════════════════════════════════════════ -->
 {% if referral_info and referral_info.total > 0 %}
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-people me-2 text-green"></i>紹介ネットワーク</div>
+    <div class="card-header"><i class="bi bi-people me-2 text-green"></i>Referral Network</div>
     <div class="card-body">
         <div class="row g-3">
             <div class="col-4">
                 <div class="stat-card text-center p-2">
-                    <div class="fw-bold">{{ referral_info.total }}</div>
-                    <div style="font-size:.7rem;color:var(--gyo-muted);">紹介数</div>
+                    <div class="fw-bold" style="font-size:1.1rem;">{{ referral_info.total }}</div>
+                    <div style="font-size:.7rem;color:var(--gyo-muted);">Referrals</div>
                 </div>
             </div>
             <div class="col-4">
                 <div class="stat-card text-center p-2">
                     <div class="fw-bold text-green">{{ referral_info.bonus | money }}</div>
-                    <div style="font-size:.7rem;color:var(--gyo-muted);">紹介ボーナス</div>
+                    <div style="font-size:.7rem;color:var(--gyo-muted);">Total Bonus</div>
                 </div>
             </div>
             <div class="col-4">
                 <div class="stat-card text-center p-2">
                     <div class="fw-bold">{{ referral_info.events }}</div>
-                    <div style="font-size:.7rem;color:var(--gyo-muted);">イベント数</div>
+                    <div style="font-size:.7rem;color:var(--gyo-muted);">Events</div>
                 </div>
             </div>
         </div>
+        {% if referral_info.referred_users %}
+        <div class="table-responsive mt-3">
+            <table class="table table-sm mb-0">
+                <thead><tr><th>User</th><th>Invested</th><th>Bonus Paid</th><th></th></tr></thead>
+                <tbody>
+                {% for u in referral_info.referred_users %}
+                <tr>
+                    <td>{{ u.full_name or u.username or ('User #' ~ u.user_id) }}</td>
+                    <td>{{ (u.total_invested or 0) | money }}</td>
+                    <td class="text-green">{{ (u.total_bonus or 0) | money }}</td>
+                    <td><a href="{{ url_for('main.user_detail', user_id=u.user_id) }}" class="btn btn-sm btn-outline-secondary" style="padding:1px 8px;font-size:.72rem;">View</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}
 
+<!-- ══════════════════════════════════════════════════════════
+     SESSION LOG
+══════════════════════════════════════════════════════════ -->
+{% if sessions %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-clock-history me-2 text-green"></i>Session Log</span>
+        <small style="color:var(--gyo-muted);">{{ sessions|length }} entries</small>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0">
+            <thead><tr><th>Action</th><th>Platform</th><th>IP</th><th>Details</th><th>When</th></tr></thead>
+            <tbody>
+            {% for s in sessions %}
+            <tr>
+                <td><span class="badge" style="background:rgba(255,255,255,.05);color:var(--gyo-muted);">{{ s.action }}</span></td>
+                <td><small>{{ s.platform or '—' }}</small></td>
+                <td><small style="font-family:monospace;color:var(--gyo-muted);">{{ s.ip_address or '—' }}</small></td>
+                <td><small style="color:var(--gyo-muted);">{{ (s.details or '')[:50] }}</small></td>
+                <td><small style="color:var(--gyo-muted);">{{ s.created_at | timeago }}</small></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Extra styles for this page -->
+<style>
+.edit-panel {
+    background: var(--gyo-washi);
+    border: 1px solid var(--gyo-border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 8px;
+}
+.edit-label {
+    display: block;
+    font-size: .68rem;
+    color: var(--gyo-muted);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+.badge-approved { background: rgba(82,183,136,.15); color: #52b788; }
+</style>
+
+<script>
+function togglePanel(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+</script>
 {% endblock %}

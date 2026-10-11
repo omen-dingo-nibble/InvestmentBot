@@ -54,6 +54,13 @@ def create_app() -> Flask:
     app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
     app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24 hours
 
+    # Allow negative integers in URL routes (for phone-only users with negative IDs)
+    from werkzeug.routing import IntegerConverter
+    class SignedIntConverter(IntegerConverter):
+        regex = r"-?\d+"
+        num_convert = int
+    app.url_map.converters["sint"] = SignedIntConverter
+
     # Register blueprints
     from web.routes import bp
     app.register_blueprint(bp)
@@ -78,6 +85,13 @@ def create_app() -> Flask:
         if not ts:
             return "-"
         return datetime.fromtimestamp(int(ts), tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+    @app.template_filter("ts_to_input_val")
+    def ts_to_input_val(ts):
+        """Format a Unix timestamp for datetime-local HTML input (YYYY-MM-DDTHH:MM)."""
+        if not ts:
+            return ""
+        return datetime.fromtimestamp(int(ts), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M")
 
     @app.template_filter("money")
     def money_filter(amount, currency="PHP"):
