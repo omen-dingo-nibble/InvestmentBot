@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Deposits{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h4><i class="bi bi-wallet2 me-2 text-gold"></i>Deposits</h4>
+    <div class="d-flex gap-2">
+        {% for s in ['pending', 'completed', 'rejected', 'all'] %}
+        <a href="{{ url_for('main.deposits', status=s) }}"
+           class="btn btn-sm {{ 'btn-gold' if status_filter == s else 'btn-outline-secondary' }}">
+            {{ s.capitalize() }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <span>{{ total }} deposit{{ 's' if total != 1 else '' }} — <em>{{ status_filter }}</em></span>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th><th>User</th><th>Amount</th><th>Crypto</th>
+                    <th>Network</th><th>TX Hash</th><th>Status</th><th>Date</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for d in deposits %}
+            <tr>
+                <td><code>#{{ d.id }}</code></td>
+                <td>
+                    <a href="{{ url_for('main.user_detail', user_id=d.user_id) }}" class="text-decoration-none">
+                        {% if d._user %}
+                            {{ d._user.full_name or d._user.username or d.user_id }}
+                        {% else %}
+                            {{ d.user_id }}
+                        {% endif %}
+                    </a>
+                </td>
+                <td>
+                    <strong>{{ d.amount | money }}</strong>
+                </td>
+                <td>{{ d.crypto_currency or d.currency or '—' }}</td>
+                <td>{{ d.network or '—' }}</td>
+                <td>
+                    {% if d.tx_hash %}
+                    <code class="small">{{ d.tx_hash[:16] }}…</code>
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-{{ d.status }}">{{ d.status }}</span>
+                    {% if d.receipt_file_id %}
+                    <span class="badge bg-secondary ms-1" title="Receipt attached">
+                        <i class="bi bi-image"></i>
+                    </span>
+                    {% endif %}
+                </td>
+                <td><small class="text-muted">{{ d.created_at | ts_to_date }}</small></td>
+                <td>
+                    {% if d.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('main.deposit_approve', tx_id=d.id) }}"
+                          class="d-inline" onsubmit="return confirm('Approve deposit #{{ d.id }}?')">
+                        <button class="btn btn-success btn-sm py-0">
+                            <i class="bi bi-check-lg"></i> Approve
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('main.deposit_reject', tx_id=d.id) }}"
+                          class="d-inline" onsubmit="return confirm('Reject deposit #{{ d.id }}?')">
+                        <button class="btn btn-danger btn-sm py-0">
+                            <i class="bi bi-x-lg"></i> Reject
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="9" class="text-center text-muted py-4">No deposits found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if total_pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {{ 'active' if p == page else '' }}">
+                    <a class="page-link" href="{{ url_for('main.deposits', page=p, status=status_filter) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

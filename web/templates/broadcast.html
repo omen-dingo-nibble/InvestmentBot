@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Broadcast{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h4><i class="bi bi-megaphone me-2 text-gold"></i>Broadcast Message</h4>
+    <small class="text-muted">Send a message to all active bot users</small>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Message</label>
+                        <textarea name="message" class="form-control" rows="8"
+                                  placeholder="Write your announcement here…&#10;&#10;Supports Markdown: *bold*, _italic_, `code`"
+                                  required></textarea>
+                        <small class="text-muted mt-1 d-block">
+                            Supports Telegram Markdown: <code>*bold*</code> <code>_italic_</code> <code>`code`</code>
+                        </small>
+                    </div>
+                    <div class="alert alert-warning py-2" style="font-size:.85rem;">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        This will send a message to <strong>all users</strong> of the bot.
+                        The bot must be running to deliver the message.
+                    </div>
+                    <button type="submit" class="btn btn-gold px-4">
+                        <i class="bi bi-send me-2"></i>Send Broadcast
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-lightbulb me-2 text-gold"></i>Tips</div>
+            <div class="card-body text-muted small">
+                <ul class="mb-0 ps-3">
+                    <li class="mb-2">Keep messages concise and professional.</li>
+                    <li class="mb-2">Use broadcasts for announcements: plan updates, maintenance windows, new features.</li>
+                    <li class="mb-2">Telegram limits message delivery rate, so broadcasts to large audiences may take a few minutes.</li>
+                    <li>The bot must be <strong>running</strong> to pick up and deliver the message.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "portal/base.html" %}
+{% block title %}Rewards — Gyokuro{% endblock %}
+
+{% block topbar %}
+<div class="top-bar">
+    <div>
+        <div style="font-size:1.2rem;font-weight:800;">Rewards</div>
+        <div style="font-size:.75rem;color:#8896B3;">Rewards you can collect today.</div>
+    </div>
+    <div class="brand-logo">GY</div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Rewards Hero -->
+<div class="reward-hero">
+    <div class="rh-left">
+        <div class="rh-label">TODAY'S REWARDS</div>
+        <div class="rh-title">
+            {% if today_earned > 0 %}
+                ₱{{ "%.2f"|format(today_earned) }} earned
+            {% elif active_inv_count > 0 %}
+                {{ active_inv_count }} reward{{ 's' if active_inv_count != 1 else '' }} active
+            {% else %}
+                Start earning today
+            {% endif %}
+        </div>
+        <div class="rh-sub">
+            💰 Collected today ₱{{ "%.2f"|format(today_earned) }}
+        </div>
+        <div class="rh-progress-wrap">
+            {% set steps_done = (1 if active_inv_count > 0 else 0) + (1 if ref_info.total > 0 else 0) + (1 if today_earned > 0 else 0) %}
+            <div class="rh-progress-bar">
+                <div class="rh-progress-fill" style="width:{{ (steps_done / 3 * 100)|int }}%;"></div>
+            </div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.4);">{{ steps_done }} of 3 done</div>
+        </div>
+    </div>
+    <div class="rh-icon">🎁</div>
+</div>
+
+<!-- Daily check-in -->
+<div class="reward-row">
+    <div class="rr-head">
+        <div class="rr-icon" style="background:rgba(245,158,11,.15);">🗓️</div>
+        <div>
+            <div class="rr-title">Daily check-in</div>
+            <div class="rr-sub">Open the Telegram bot daily to stay active</div>
+        </div>
+        <a href="https://t.me/{{ bot_username }}" target="_blank"
+           style="margin-left:auto;background:#F59E0B;color:#000;font-size:.78rem;font-weight:700;padding:7px 14px;border-radius:20px;text-decoration:none;flex-shrink:0;">
+            Check in
+        </a>
+    </div>
+
+    <!-- 7-day streak (Mon–today) -->
+    {% set days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+    <div style="font-size:.75rem;color:#8896B3;margin-bottom:6px;">
+        {% if active_inv_count > 0 %}Active streak{% else %}Start your streak{% endif %}
+    </div>
+    <div class="streak-row">
+        {% for i in range(7) %}
+        <div class="streak-day">
+            <div class="sd-dot {% if i == 6 %}today{% elif i < (active_inv_count if active_inv_count <= 6 else 6) %}checked{% endif %}">
+                {% if i < (active_inv_count if active_inv_count <= 6 else 6) %}
+                    <i class="bi bi-check2" style="font-size:.7rem;"></i>
+                {% else %}
+                    {{ 6 + i - 5 }}
+                {% endif %}
+            </div>
+            <div class="sd-label">{{ days[i] }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Lucky Spin -->
+<div class="reward-row">
+    <div class="rr-head">
+        <div class="rr-icon" style="background:rgba(29,185,84,.12);color:#1DB954;">🌀</div>
+        <div>
+            <div class="rr-title">Lucky Spin</div>
+            <div class="rr-sub">Buy your first plan to get a spin</div>
+        </div>
+        <i class="bi bi-chevron-right rr-arrow"></i>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('portal.plans') }}" style="background:#2A3450;color:#F0F4FF;font-size:.8rem;font-weight:700;padding:8px 16px;border-radius:20px;text-decoration:none;">See plans</a>
+        <a href="{{ url_for('portal.invite') }}" style="background:#2A3450;color:#F0F4FF;font-size:.8rem;font-weight:700;padding:8px 16px;border-radius:20px;text-decoration:none;">Invite a friend</a>
+    </div>
+</div>
+
+<!-- Invite rewards -->
+<div class="reward-row">
+    <div class="rr-head">
+        <div class="rr-icon" style="background:rgba(59,130,246,.12);color:#3B82F6;">👥</div>
+        <div>
+            <div class="rr-title">Invite rewards</div>
+            <div class="rr-sub">{{ ref_info.total }} of 5 qualified friends → ₱{{ "%.2f"|format(ref_info.bonus) }}</div>
+        </div>
+        <i class="bi bi-chevron-right rr-arrow"></i>
+    </div>
+    <!-- Progress bar -->
+    {% set ref_pct = [(ref_info.total / 5 * 100)|int, 100]|min %}
+    <div style="height:6px;background:#2A3450;border-radius:3px;overflow:hidden;margin-bottom:6px;">
+        <div style="width:{{ ref_pct }}%;height:100%;background:linear-gradient(90deg,#15883D,#1DB954);border-radius:3px;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#8896B3;">
+        <span>{{ 5 - ref_info.total }} more friends to go</span>
+        <span>{{ ref_info.total }}/5</span>
+    </div>
+</div>
+
+<div style="height:16px;"></div>
+{% endblock %}

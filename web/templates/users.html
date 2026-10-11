@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Members{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h4><i class="bi bi-people me-2 text-gold"></i>Members</h4>
+    <span class="text-muted">{{ total }} total</span>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control" placeholder="Search by name, username, or ID…"
+                   value="{{ search }}">
+            <button type="submit" class="btn btn-gold px-3">
+                <i class="bi bi-search"></i>
+            </button>
+            {% if search %}
+            <a href="{{ url_for('main.users') }}" class="btn btn-outline-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Name</th><th>Username</th>
+                    <th>Balance</th><th>Deposited</th><th>Invested</th>
+                    <th>Status</th><th>Joined</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for u in users %}
+            <tr onclick="location.href='{{ url_for('main.user_detail', user_id=u.user_id) }}'"
+                style="cursor:pointer;">
+                <td><code>{{ u.user_id }}</code></td>
+                <td>{{ u.full_name or '—' }}</td>
+                <td>{{ ('@' + u.username) if u.username else '—' }}</td>
+                <td><strong>{{ u.balance | money }}</strong></td>
+                <td>{{ u.total_deposited | money }}</td>
+                <td>{{ u.total_invested | money }}</td>
+                <td>
+                    {% if u.is_banned %}
+                    <span class="badge badge-rejected">Banned</span>
+                    {% elif u.is_admin %}
+                    <span class="badge" style="background:#7C3AED;">Admin</span>
+                    {% else %}
+                    <span class="badge badge-active">Active</span>
+                    {% endif %}
+                </td>
+                <td><small class="text-muted">{{ u.created_at | timeago }}</small></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-4">No users found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if total_pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {{ 'active' if p == page else '' }}">
+                    <a class="page-link" href="{{ url_for('main.users', page=p, q=search) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

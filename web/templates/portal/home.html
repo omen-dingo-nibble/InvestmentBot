@@ -1,0 +1,209 @@
+{% extends "portal/base.html" %}
+{% block title %}Home — Gyokuro{% endblock %}
+
+{% block content %}
+<!-- Balance Card -->
+<div class="balance-card">
+    <div class="label">TOTAL BALANCE</div>
+    <div class="amount">₱{{ "%.2f"|format(user.balance) }}</div>
+    <div class="sub-label {% if today_earnings > 0 %}earned{% endif %}">
+        {% if today_earnings > 0 %}
+            +₱{{ "%.2f"|format(today_earnings) }} earned today
+        {% else %}
+            No income yet today
+        {% endif %}
+    </div>
+    <div class="btn-row">
+        <a href="https://t.me/{{ bot_username }}?start=deposit" class="btn-balance btn-topup" target="_blank">
+            ⬇ Top up
+        </a>
+        <a href="https://t.me/{{ bot_username }}" class="btn-balance btn-withdraw" target="_blank">
+            ↗ Withdraw
+        </a>
+    </div>
+</div>
+
+<!-- Get Started Steps -->
+{% set has_deposits = user.total_deposited > 0 %}
+{% set has_investments = user.total_invested > 0 %}
+{% set has_referrals = ref_info.total > 0 %}
+{% set steps_done = (1 if has_deposits else 0) + (1 if has_investments else 0) + (1 if has_referrals else 0) %}
+<div class="get-started-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="gs-title">Get started</div>
+        <span class="gs-badge">{{ steps_done }}/3</span>
+    </div>
+    {% if not has_deposits %}
+    <div style="margin-bottom:6px;">
+        <span style="font-size:.75rem;background:rgba(245,158,11,.12);color:#F59E0B;padding:3px 10px;border-radius:20px;font-weight:600;">
+            • Next: Top up
+        </span>
+    </div>
+    {% endif %}
+
+    <div class="gs-step">
+        <div class="step-icon {% if has_deposits %}done{% else %}active{% endif %}">
+            {% if has_deposits %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-wallet2"></i>{% endif %}
+        </div>
+        <div class="step-text">
+            <strong>Top up</strong>
+            <small>Add money to your Gyokuro balance.</small>
+        </div>
+        {% if not has_deposits %}
+        <a href="https://t.me/{{ bot_username }}" class="step-arrow" target="_blank">
+            <i class="bi bi-arrow-right"></i>
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="gs-step">
+        <div class="step-icon {% if has_investments %}done{% elif has_deposits %}active{% endif %}">
+            {% if has_investments %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-bar-chart-line"></i>{% endif %}
+        </div>
+        <div class="step-text">
+            <strong>Buy a plan</strong>
+            <small>Pay once and get paid every day.</small>
+        </div>
+        {% if has_deposits and not has_investments %}
+        <a href="{{ url_for('portal.plans') }}" class="step-arrow">
+            <i class="bi bi-arrow-right"></i>
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="gs-step">
+        <div class="step-icon {% if has_referrals %}done{% elif has_investments %}active{% endif %}">
+            {% if has_referrals %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-people"></i>{% endif %}
+        </div>
+        <div class="step-text">
+            <strong>Invite a friend</strong>
+            <small>Earn a commission when they buy a plan.</small>
+        </div>
+        {% if has_investments and not has_referrals %}
+        <a href="{{ url_for('portal.invite') }}" class="step-arrow">
+            <i class="bi bi-arrow-right"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Active Investments -->
+{% if investments %}
+<div class="section-head">
+    <h3>My Active Plans</h3>
+    <a href="{{ url_for('portal.me') }}" class="see-all">See all →</a>
+</div>
+{% for inv in investments[:3] %}
+<div class="today-row" style="flex-wrap:wrap;gap:8px;">
+    <div class="task-icon" style="background:rgba(29,185,84,.12);color:#1DB954;">
+        <i class="bi bi-graph-up-arrow"></i>
+    </div>
+    <div style="flex:1;min-width:120px;">
+        <div class="task-title">{{ inv.plan_name }}</div>
+        <div class="task-sub">₱{{ "%.2f"|format(inv.principal) }} · {{ inv._days_left }}d left</div>
+        <div class="inv-progress mt-s">
+            <div class="inv-progress-fill" style="width:{{ inv._progress_pct }}%;"></div>
+        </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:.85rem;font-weight:700;color:#1DB954;">+₱{{ "%.2f"|format(inv._earned_today) }}</div>
+        <div style="font-size:.7rem;color:#8896B3;">earned so far</div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Today's Tasks -->
+<div class="section-head">
+    <h3>Today</h3>
+    {% if investments %}
+    <span style="font-size:.78rem;color:#8896B3;">
+        <span style="display:inline-block;width:18px;height:18px;background:conic-gradient(#1DB954 {{ (investments|length / 3 * 100)|int }}%, #2A3450 0);border-radius:50%;vertical-align:middle;"></span>
+        {{ investments|length }} of 3 done
+    </span>
+    {% endif %}
+</div>
+
+<div class="today-row">
+    <div class="task-icon" style="background:rgba(245,158,11,.15);">🗓️</div>
+    <div>
+        <div class="task-title">Daily check-in</div>
+        <div class="task-sub">Open the bot and interact to stay active</div>
+    </div>
+    <a href="https://t.me/{{ bot_username }}" class="task-btn" target="_blank">Check in</a>
+</div>
+
+<div class="today-row">
+    <div class="task-icon" style="background:rgba(29,185,84,.12);">🌀</div>
+    <div>
+        <div class="task-title">Lucky Spin</div>
+        <div class="task-sub">Buy your first plan to get a spin</div>
+    </div>
+    <a href="{{ url_for('portal.plans') }}" class="task-btn" style="background:#2A3450;color:#F0F4FF;">See plans</a>
+</div>
+
+<!-- Recent Transactions -->
+{% if recent_tx %}
+<div class="section-head">
+    <h3>Recent Activity</h3>
+    <a href="{{ url_for('portal.me') }}" class="see-all">All →</a>
+</div>
+<div style="margin:0 16px;background:#1A2235;border-radius:16px;border:1px solid #2A3450;overflow:hidden;">
+{% for tx in recent_tx %}
+<div class="tx-item">
+    <div class="tx-icon" style="{% if tx.tx_type == 'deposit' %}background:rgba(29,185,84,.12);color:#1DB954;{% elif tx.tx_type in ('earning','referral','signup_bonus') %}background:rgba(245,158,11,.12);color:#F59E0B;{% else %}background:rgba(239,68,68,.1);color:#EF4444;{% endif %}">
+        {% if tx.tx_type == 'deposit' %}<i class="bi bi-arrow-down-circle"></i>
+        {% elif tx.tx_type == 'earning' %}<i class="bi bi-graph-up-arrow"></i>
+        {% elif tx.tx_type == 'referral' %}<i class="bi bi-people"></i>
+        {% elif tx.tx_type == 'signup_bonus' %}<i class="bi bi-gift"></i>
+        {% elif tx.tx_type == 'withdrawal' %}<i class="bi bi-arrow-up-circle"></i>
+        {% else %}<i class="bi bi-arrow-left-right"></i>{% endif %}
+    </div>
+    <div>
+        <div class="tx-title">{{ tx.tx_type|replace('_',' ')|title }}</div>
+        <div class="tx-date">{{ tx.created_at | timeago }} · {{ tx.status }}</div>
+    </div>
+    <div class="tx-amount {% if tx.amount > 0 %}positive{% elif tx.amount < 0 %}negative{% else %}neutral{% endif %}">
+        {{ '+' if tx.amount > 0 else '' }}₱{{ "%.2f"|format(tx.amount|abs) }}
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+<div style="height:16px;"></div>
+{% endblock %}
+
+{% block modals %}
+<!-- Announcement modal — auto-opens on first visit -->
+{% if announcement %}
+<div class="modal-overlay" id="announcementModal">
+    <div class="modal-sheet" style="position:relative;">
+        <button class="close-btn" id="closeAnnouncement"><i class="bi bi-x"></i></button>
+        <div class="modal-icon"><i class="bi bi-megaphone-fill" style="color:#fff;"></i></div>
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:12px;">Announcement</div>
+        <div style="font-size:.85rem;color:#8896B3;line-height:1.7;white-space:pre-line;">{{ announcement }}</div>
+        <a href="https://t.me/{{ bot_username }}" target="_blank"
+           style="display:block;margin-top:20px;background:linear-gradient(135deg,#15883D,#1DB954);color:#fff;text-align:center;padding:14px;border-radius:14px;font-weight:700;text-decoration:none;">
+            <i class="bi bi-telegram"></i> Open Telegram
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto-show announcement only once per session
+if (document.getElementById('announcementModal')) {
+    const key = 'gyo_ann_seen';
+    if (!sessionStorage.getItem(key)) {
+        setTimeout(() => document.getElementById('announcementModal').classList.add('open'), 400);
+        sessionStorage.setItem(key, '1');
+    }
+    document.getElementById('closeAnnouncement')?.addEventListener('click', () => {
+        document.getElementById('announcementModal').classList.remove('open');
+    });
+}
+</script>
+{% endblock %}

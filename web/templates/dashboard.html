@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-speedometer2 me-2 text-gold"></i>Dashboard</h4>
+        <small class="text-muted">High Caliber Construction NW — Investment Overview</small>
+    </div>
+    <div class="text-end">
+        <span class="badge bg-success me-1">Live</span>
+        <small class="text-muted">{{ now.strftime('%b %d, %Y %H:%M UTC') }}</small>
+    </div>
+</div>
+
+<!-- Top stat row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(37,99,235,.15);">
+                <i class="bi bi-people text-primary"></i>
+            </div>
+            <div class="stat-value text-primary">{{ stats.users }}</div>
+            <div class="stat-label">Total Members</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(5,150,105,.15);">
+                <i class="bi bi-arrow-down-circle" style="color:#059669;"></i>
+            </div>
+            <div class="stat-value" style="color:#059669;">{{ stats.total_deposits_approved | money }}</div>
+            <div class="stat-label">Total Deposits</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(184,134,11,.15);">
+                <i class="bi bi-graph-up-arrow text-gold"></i>
+            </div>
+            <div class="stat-value text-gold">{{ stats.active_investments }}</div>
+            <div class="stat-label">Active Investments</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(124,58,237,.15);">
+                <i class="bi bi-bank" style="color:#7C3AED;"></i>
+            </div>
+            <div class="stat-value" style="color:#7C3AED;">{{ stats.total_principal_active | money }}</div>
+            <div class="stat-label">Capital Locked</div>
+        </div>
+    </div>
+</div>
+
+<!-- Second stat row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(217,119,6,.15);">
+                <i class="bi bi-clock-history" style="color:#D97706;"></i>
+            </div>
+            <div class="stat-value" style="color:#D97706;">{{ stats.pending_deposits }}</div>
+            <div class="stat-label">Pending Deposits</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(220,38,38,.15);">
+                <i class="bi bi-hourglass-split text-danger"></i>
+            </div>
+            <div class="stat-value text-danger">{{ stats.pending_withdrawals }}</div>
+            <div class="stat-label">Pending Withdrawals</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(5,150,105,.15);">
+                <i class="bi bi-coin" style="color:#059669;"></i>
+            </div>
+            <div class="stat-value" style="color:#059669;">{{ stats.total_earnings_paid | money }}</div>
+            <div class="stat-label">Earnings Paid</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(59,130,246,.15);">
+                <i class="bi bi-gift text-info"></i>
+            </div>
+            <div class="stat-value text-info">{{ stats.total_referral_bonus | money }}</div>
+            <div class="stat-label">Referral Bonuses</div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending queues -->
+<div class="row g-4 mb-4">
+    <!-- Pending Deposits -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-wallet2 me-2 text-gold"></i>Pending Deposits</span>
+                <a href="{{ url_for('main.deposits') }}" class="btn btn-sm btn-outline-gold">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_deposits %}
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead><tr><th>#</th><th>User</th><th>Amount</th><th>Time</th><th></th></tr></thead>
+                        <tbody>
+                        {% for d in recent_deposits %}
+                        <tr onclick="location.href='{{ url_for('main.deposits') }}'">
+                            <td><code>#{{ d.id }}</code></td>
+                            <td>{{ d.user_id }}</td>
+                            <td><strong>{{ d.amount | money }}</strong></td>
+                            <td><small class="text-muted">{{ d.created_at | timeago }}</small></td>
+                            <td><span class="badge badge-pending">pending</span></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>
+                    No pending deposits
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Withdrawals -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cash-stack me-2 text-gold"></i>Pending Withdrawals</span>
+                <a href="{{ url_for('main.withdrawals') }}" class="btn btn-sm btn-outline-gold">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_withdrawals %}
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead><tr><th>#</th><th>User</th><th>Amount</th><th>Time</th><th></th></tr></thead>
+                        <tbody>
+                        {% for w in recent_withdrawals %}
+                        <tr onclick="location.href='{{ url_for('main.withdrawals') }}'">
+                            <td><code>#{{ w.id }}</code></td>
+                            <td>{{ w.user_id }}</td>
+                            <td><strong>{{ w.amount | money }}</strong></td>
+                            <td><small class="text-muted">{{ w.created_at | timeago }}</small></td>
+                            <td><span class="badge badge-pending">pending</span></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>
+                    No pending withdrawals
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audit logs -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-shield-check me-2 text-gold"></i>Recent Admin Activity</span>
+        <a href="{{ url_for('main.audit_logs') }}" class="btn btn-sm btn-outline-secondary">All Logs</a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_logs %}
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
+                <tbody>
+                {% for l in recent_logs %}
+                <tr>
+                    <td><small class="text-muted">{{ l.created_at | timeago }}</small></td>
+                    <td><small>{{ l.admin_name or '-' }}</small></td>
+                    <td><code>{{ l.action }}</code></td>
+                    <td><small class="text-muted">{{ (l.details or '')[:70] }}</small></td>
+                    <td><small class="text-muted">{{ l.ip_address or '-' }}</small></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-3 text-muted text-center">No recent activity.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "portal/base.html" %}
+{% block title %}Plans — Gyokuro{% endblock %}
+
+{% block topbar %}
+<div class="top-bar">
+    <div>
+        <div style="font-size:1.2rem;font-weight:800;">Plans</div>
+        <div style="font-size:.75rem;color:#8896B3;">Pay once, get paid every day.</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <div class="brand-logo">GY</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- How plans work -->
+<div class="how-plans-banner" id="howPlans">
+    <button class="close-how" onclick="document.getElementById('howPlans').style.display='none'">✕</button>
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:2px;">How plans work</div>
+    <div class="how-steps">
+        <div class="how-step done">
+            <div class="hs-num">1</div>
+            <span class="hs-icon">🏪</span>
+            <div class="hs-label">Buy a plan</div>
+        </div>
+        <div class="how-connector"></div>
+        <div class="how-step">
+            <div class="hs-num">2</div>
+            <span class="hs-icon">💰</span>
+            <div class="hs-label">Get paid every 24 hours</div>
+        </div>
+        <div class="how-connector"></div>
+        <div class="how-step">
+            <div class="hs-num">3</div>
+            <span class="hs-icon">↗</span>
+            <div class="hs-label">Withdraw to your account</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter chips -->
+<div class="chip-row">
+    <a href="?filter=all" class="chip {% if not request.args.get('filter') or request.args.get('filter') == 'all' %}active{% endif %}">All</a>
+    <a href="?filter=starter" class="chip {% if request.args.get('filter') == 'starter' %}active{% endif %}">₱200–₱999</a>
+    <a href="?filter=mid" class="chip {% if request.args.get('filter') == 'mid' %}active{% endif %}">₱1,000–₱5,000</a>
+    <a href="?filter=premium" class="chip {% if request.args.get('filter') == 'premium' %}active{% endif %}">₱5,000+</a>
+</div>
+
+<!-- Plans grid -->
+<div class="plans-grid">
+{% set filter_val = request.args.get('filter', 'all') %}
+{% for plan in plans %}
+{% if filter_val == 'all'
+   or (filter_val == 'starter' and plan.min_amount < 1000)
+   or (filter_val == 'mid' and plan.min_amount >= 1000 and plan.min_amount <= 5000)
+   or (filter_val == 'premium' and plan.min_amount > 5000) %}
+<div class="plan-card">
+    <div class="plan-img-wrap">
+        {% if plan.image %}
+        <img src="{{ url_for('static', filename='products/' + plan.image) }}"
+             alt="{{ plan.name }}"
+             class="plan-img"
+             onerror="this.style.background='#1F2A40';this.style.height='140px';">
+        {% else %}
+        <div class="plan-img" style="background:linear-gradient(135deg,#0d2d4a,#0f3d25);display:flex;align-items:center;justify-content:center;font-size:2rem;">🍵</div>
+        {% endif %}
+        <div class="plan-price-tag">₱{{ "{:,.0f}".format(plan.min_amount) }}</div>
+    </div>
+    <div class="plan-body">
+        <div class="plan-name">{{ plan.name }}</div>
+        <div class="plan-roi">₱{{ "{:,.0f}".format(plan._total_return / plan.duration_days) }} / day</div>
+        <div class="plan-meta">
+            <i class="bi bi-calendar3"></i> {{ plan.duration_days }} days ·
+            Total ₱{{ "{:,.0f}".format(plan._total_return) }}
+        </div>
+        <a href="https://t.me/{{ bot_username }}" class="plan-buy-btn" target="_blank">
+            Buy →
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+</div>
+
+<div style="height:20px;"></div>
+{% endblock %}

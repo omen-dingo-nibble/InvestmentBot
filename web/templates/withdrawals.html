@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Withdrawals{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h4><i class="bi bi-cash-stack me-2 text-gold"></i>Withdrawals</h4>
+    <div class="d-flex gap-2">
+        {% for s in ['pending', 'completed', 'rejected', 'all'] %}
+        <a href="{{ url_for('main.withdrawals', status=s) }}"
+           class="btn btn-sm {{ 'btn-gold' if status_filter == s else 'btn-outline-secondary' }}">
+            {{ s.capitalize() }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        {{ total }} withdrawal{{ 's' if total != 1 else '' }} — <em>{{ status_filter }}</em>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th><th>User</th><th>Amount</th>
+                    <th>Wallet Address</th><th>Status</th><th>Date</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for w in withdrawals %}
+            <tr>
+                <td><code>#{{ w.id }}</code></td>
+                <td>
+                    <a href="{{ url_for('main.user_detail', user_id=w.user_id) }}" class="text-decoration-none">
+                        {% if w._user %}
+                            {{ w._user.full_name or w._user.username or w.user_id }}
+                        {% else %}
+                            {{ w.user_id }}
+                        {% endif %}
+                    </a>
+                </td>
+                <td><strong>{{ w.amount | money }}</strong></td>
+                <td>
+                    {% if w.wallet_address %}
+                    <code class="small">{{ w.wallet_address[:24] }}…</code>
+                    <button class="btn btn-link btn-sm p-0 ms-1 text-muted"
+                            onclick="navigator.clipboard.writeText('{{ w.wallet_address }}')"
+                            title="Copy address"><i class="bi bi-clipboard"></i></button>
+                    {% else %}—{% endif %}
+                </td>
+                <td><span class="badge badge-{{ w.status }}">{{ w.status }}</span></td>
+                <td><small class="text-muted">{{ w.created_at | ts_to_date }}</small></td>
+                <td>
+                    {% if w.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('main.withdrawal_approve', tx_id=w.id) }}"
+                          class="d-inline" onsubmit="return confirm('Mark withdrawal #{{ w.id }} as paid?')">
+                        <button class="btn btn-success btn-sm py-0">
+                            <i class="bi bi-check-lg"></i> Paid
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('main.withdrawal_reject', tx_id=w.id) }}"
+                          class="d-inline" onsubmit="return confirm('Reject withdrawal #{{ w.id }} and return funds?')">
+                        <button class="btn btn-danger btn-sm py-0">
+                            <i class="bi bi-x-lg"></i> Reject
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No withdrawals found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if total_pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {{ 'active' if p == page else '' }}">
+                    <a class="page-link" href="{{ url_for('main.withdrawals', page=p, status=status_filter) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

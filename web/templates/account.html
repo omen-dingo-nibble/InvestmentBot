@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}My Account{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h4><i class="bi bi-person-circle me-2 text-gold"></i>My Account</h4>
+</div>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-person me-2"></i>Account Info</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5 text-muted">Username</dt>
+                    <dd class="col-7"><code>{{ admin.username }}</code></dd>
+                    <dt class="col-5 text-muted">Display Name</dt>
+                    <dd class="col-7">{{ admin.display_name or '—' }}</dd>
+                    <dt class="col-5 text-muted">Role</dt>
+                    <dd class="col-7">
+                        <span class="badge" style="background:#7C3AED;">{{ admin.role }}</span>
+                    </dd>
+                    <dt class="col-5 text-muted">Last Login</dt>
+                    <dd class="col-7">{{ admin.last_login | timeago if admin.last_login else 'Never' }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-lock me-2"></i>Change Password</div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" name="current_password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" name="new_password" class="form-control" required
+                               minlength="6" placeholder="At least 6 characters">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-gold w-100">
+                        <i class="bi bi-check-lg me-2"></i>Update Password
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-building me-2 text-gold"></i>High Caliber Construction NW</div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    A family-owned and operated construction business built on quality
+                    craftsmanship, trust, and dedication.
+                </p>
+                <hr style="border-color:#2D3748;">
+                <h6 class="text-gold mb-3">Our Crew</h6>
+                <div class="row g-3">
+                    {% set crew = [
+                        ('Chris Hollen', 'Owner & General Contractor', 'bi-person-badge'),
+                        ('Trevor Hollen', 'Foreman', 'bi-hammer'),
+                        ('Griffyn Rider', 'Crew Member', 'bi-tools'),
+                        ('Kyler Gessler', 'Crew Member', 'bi-tools'),
+                    ] %}
+                    {% for name, title, icon in crew %}
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:36px;height:36px;background:rgba(184,134,11,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                <i class="bi {{ icon }} text-gold"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold" style="font-size:.875rem;">{{ name }}</div>
+                                <div class="small text-muted">{{ title }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <hr style="border-color:#2D3748;">
+                <a href="https://www.highcalibernorthwest.com" target="_blank"
+                   class="btn btn-outline-gold btn-sm">
+                    <i class="bi bi-globe2 me-1"></i>Visit Website
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

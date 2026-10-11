@@ -1,0 +1,212 @@
+{% extends "portal/base.html" %}
+{% block title %}Me — Gyokuro{% endblock %}
+
+{% block topbar %}
+<div class="top-bar">
+    <div style="font-size:1.2rem;font-weight:800;">Me</div>
+    <div class="brand-logo">GY</div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Profile card -->
+<div class="profile-card">
+    <div class="avatar">
+        {{ (user.full_name or user.username or 'U')[0]|upper }}
+    </div>
+    <div class="p-info" style="flex:1;">
+        <div class="p-name">{{ user.full_name or user.username or 'Investor' }}</div>
+        {% if user.username %}
+        <div class="p-uid">@{{ user.username }}</div>
+        {% endif %}
+        <div class="p-uid">UID {{ user.user_id }}</div>
+        <div class="p-joined">Joined {{ user.created_at | ts_to_date }}</div>
+    </div>
+    <a href="https://t.me/{{ bot_username }}" target="_blank"
+       style="color:#1DB954;font-size:.82rem;font-weight:600;text-decoration:none;flex-shrink:0;">
+        <i class="bi bi-pencil"></i> Edit
+    </a>
+</div>
+
+<!-- Balance card -->
+<div class="balance-card" style="margin:0 16px 14px;">
+    <div class="label">BALANCE</div>
+    <div class="amount">₱{{ "%.2f"|format(user.balance) }}</div>
+    <div class="btn-row">
+        <a href="https://t.me/{{ bot_username }}" class="btn-balance btn-topup" target="_blank">⬇ Top up</a>
+        <a href="https://t.me/{{ bot_username }}" class="btn-balance btn-withdraw" target="_blank">↗ Withdraw</a>
+    </div>
+</div>
+
+<!-- Invite code -->
+<div style="margin:0 16px 14px;background:#1A2235;border-radius:14px;padding:14px 16px;border:1px solid #2A3450;display:flex;align-items:center;gap:12px;">
+    <div style="width:40px;height:40px;background:rgba(245,158,11,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🎁</div>
+    <div style="flex:1;">
+        <div style="font-size:.72rem;color:#8896B3;margin-bottom:2px;">Invite code</div>
+        <div style="font-size:1rem;font-weight:700;letter-spacing:1px;">{{ user.referral_code }}</div>
+    </div>
+    <a href="{{ url_for('portal.invite') }}"
+       style="color:#1DB954;font-size:.82rem;font-weight:600;text-decoration:none;flex-shrink:0;">
+        Share →
+    </a>
+</div>
+
+<!-- Money section -->
+<div class="menu-group-label">MONEY</div>
+<div class="menu-group">
+    <a href="#my-plans" class="menu-item" onclick="toggleSection('myPlans');return false;">
+        <div class="mi-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+        <span class="mi-title">My plans</span>
+        <i class="bi bi-chevron-right mi-arrow"></i>
+    </a>
+    <a href="#wallet" class="menu-item" onclick="toggleSection('walletSection');return false;">
+        <div class="mi-icon green"><i class="bi bi-wallet2"></i></div>
+        <span class="mi-title">Wallet</span>
+        <i class="bi bi-chevron-right mi-arrow"></i>
+    </a>
+    <a href="#topup-history" class="menu-item" onclick="toggleSection('txHistory');return false;">
+        <div class="mi-icon gold"><i class="bi bi-clock-history"></i></div>
+        <span class="mi-title">Top-up history</span>
+        <i class="bi bi-chevron-right mi-arrow"></i>
+    </a>
+    <a href="https://t.me/{{ bot_username }}" class="menu-item" target="_blank">
+        <div class="mi-icon" style="background:rgba(239,68,68,.1);color:#EF4444;"><i class="bi bi-arrow-up-circle"></i></div>
+        <span class="mi-title">Withdrawal history</span>
+        <i class="bi bi-chevron-right mi-arrow"></i>
+    </a>
+    <a href="#txHistory" class="menu-item" onclick="toggleSection('txHistory');return false;">
+        <div class="mi-icon"><i class="bi bi-receipt"></i></div>
+        <span class="mi-title">Transactions</span>
+        <i class="bi bi-chevron-right mi-arrow"></i>
+    </a>
+</div>
+
+<!-- My Plans (collapsible) -->
+<div id="myPlans" style="display:none;margin:0 16px 14px;">
+    <div style="font-size:.85rem;font-weight:700;margin-bottom:10px;color:#8896B3;">MY PLANS</div>
+    {% if investments %}
+    <div style="background:#1A2235;border-radius:14px;border:1px solid #2A3450;overflow:hidden;">
+    {% for inv in investments[:10] %}
+    <div style="padding:12px 14px;border-bottom:1px solid #2A3450;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:.85rem;font-weight:700;">{{ inv.plan_name }}</span>
+            <span style="font-size:.75rem;padding:2px 8px;border-radius:20px;
+                {% if inv.status == 'active' %}background:rgba(29,185,84,.12);color:#1DB954;
+                {% elif inv.status == 'completed' %}background:rgba(5,150,105,.12);color:#059669;
+                {% else %}background:rgba(107,114,128,.12);color:#6B7280;{% endif %}">
+                {{ inv.status }}
+            </span>
+        </div>
+        <div style="font-size:.75rem;color:#8896B3;">
+            ₱{{ "{:,.2f}".format(inv.principal) }} principal ·
+            {{ inv.daily_roi_percent }}%/day ·
+            {{ inv.duration_days }} days
+        </div>
+        <div style="height:3px;background:#2A3450;border-radius:2px;margin-top:6px;overflow:hidden;">
+            {% if inv.status == 'completed' %}
+            <div style="width:100%;height:100%;background:#059669;border-radius:2px;"></div>
+            {% else %}
+            <div style="width:50%;height:100%;background:linear-gradient(90deg,#15883D,#1DB954);border-radius:2px;"></div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div style="background:#1A2235;border-radius:14px;padding:20px;text-align:center;color:#8896B3;border:1px solid #2A3450;">
+        No plans yet. <a href="{{ url_for('portal.plans') }}" style="color:#1DB954;">Browse plans →</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Wallet summary (collapsible) -->
+<div id="walletSection" style="display:none;margin:0 16px 14px;">
+    <div style="background:#1A2235;border-radius:14px;border:1px solid #2A3450;overflow:hidden;">
+        {% set wallet_rows = [
+            ('Total deposited', user.total_deposited, 'green', 'bi-arrow-down-circle'),
+            ('Total withdrawn', user.total_withdrawn, 'red', 'bi-arrow-up-circle'),
+            ('Total invested', user.total_invested, 'blue', 'bi-bar-chart-line'),
+            ('Total earned', user.total_earned, 'gold', 'bi-coin'),
+        ] %}
+        {% for label, val, color, icon in wallet_rows %}
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #2A3450;">
+            <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+                {% if color == 'green' %}background:rgba(29,185,84,.12);color:#1DB954;
+                {% elif color == 'red' %}background:rgba(239,68,68,.1);color:#EF4444;
+                {% elif color == 'blue' %}background:rgba(59,130,246,.12);color:#3B82F6;
+                {% else %}background:rgba(245,158,11,.12);color:#F59E0B;{% endif %}">
+                <i class="bi {{ icon }}"></i>
+            </div>
+            <div style="flex:1;font-size:.85rem;">{{ label }}</div>
+            <div style="font-weight:700;font-size:.9rem;">₱{{ "{:,.2f}".format(val or 0) }}</div>
+        </div>
+        {% endfor %}
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;color:#F59E0B;">
+                <i class="bi bi-people"></i>
+            </div>
+            <div style="flex:1;font-size:.85rem;">Referral earnings</div>
+            <div style="font-weight:700;font-size:.9rem;color:#F59E0B;">₱{{ "{:,.2f}".format(ref_info.bonus or 0) }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction history (collapsible) -->
+<div id="txHistory" style="display:none;margin:0 16px 14px;">
+    {% if transactions %}
+    <div style="background:#1A2235;border-radius:14px;border:1px solid #2A3450;overflow:hidden;">
+    {% for tx in transactions %}
+    <div class="tx-item">
+        <div class="tx-icon" style="{% if tx.tx_type == 'deposit' %}background:rgba(29,185,84,.12);color:#1DB954;
+            {% elif tx.tx_type in ('earning','referral','signup_bonus') %}background:rgba(245,158,11,.12);color:#F59E0B;
+            {% else %}background:rgba(239,68,68,.1);color:#EF4444;{% endif %}">
+            {% if tx.tx_type == 'deposit' %}<i class="bi bi-arrow-down-circle"></i>
+            {% elif tx.tx_type == 'earning' %}<i class="bi bi-graph-up-arrow"></i>
+            {% elif tx.tx_type == 'referral' %}<i class="bi bi-people"></i>
+            {% elif tx.tx_type == 'signup_bonus' %}<i class="bi bi-gift"></i>
+            {% elif tx.tx_type == 'withdrawal' %}<i class="bi bi-arrow-up-circle"></i>
+            {% else %}<i class="bi bi-arrow-left-right"></i>{% endif %}
+        </div>
+        <div>
+            <div class="tx-title">{{ tx.tx_type|replace('_',' ')|title }}</div>
+            <div class="tx-date">{{ tx.created_at | timeago }} · <span style="{% if tx.status == 'completed' %}color:#1DB954;{% elif tx.status == 'pending' %}color:#F59E0B;{% else %}color:#EF4444;{% endif %}">{{ tx.status }}</span></div>
+        </div>
+        <div class="tx-amount {% if tx.amount > 0 %}positive{% elif tx.amount < 0 %}negative{% else %}neutral{% endif %}">
+            {{ '+' if tx.amount > 0 else '' }}₱{{ "%.2f"|format(tx.amount|abs) }}
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div style="background:#1A2235;border-radius:14px;padding:20px;text-align:center;color:#8896B3;border:1px solid #2A3450;">
+        No transactions yet.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Account section -->
+<div class="menu-group-label">ACCOUNT</div>
+<div class="menu-group" style="margin-bottom:14px;">
+    <a href="https://t.me/{{ bot_username }}" class="menu-item" target="_blank">
+        <div class="mi-icon"><i class="bi bi-headset"></i></div>
+        <span class="mi-title">Support</span>
+        <i class="bi bi-chevron-right mi-arrow"></i>
+    </a>
+    <a href="{{ url_for('portal.portal_logout') }}" class="menu-item" style="color:#EF4444;">
+        <div class="mi-icon" style="background:rgba(239,68,68,.1);color:#EF4444;"><i class="bi bi-box-arrow-right"></i></div>
+        <span class="mi-title" style="color:#EF4444;">Sign out</span>
+        <i class="bi bi-chevron-right mi-arrow" style="color:#EF4444;"></i>
+    </a>
+</div>
+
+<div style="height:20px;"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleSection(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}
