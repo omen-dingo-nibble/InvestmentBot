@@ -31,6 +31,21 @@ portal = Blueprint("portal", __name__, url_prefix="/app")
 
 
 # ---------------------------------------------------------------------------
+# Root landing page — redirect / to user portal
+# ---------------------------------------------------------------------------
+
+from flask import Blueprint as _BP
+root_bp = _BP("root", __name__)
+
+@root_bp.route("/")
+def root_index():
+    """Default page: if user is logged in to portal → home, else → user portal login."""
+    if "portal_user_id" in session:
+        return redirect(url_for("portal.home"))
+    return redirect(url_for("portal.portal_login_page"))
+
+
+# ---------------------------------------------------------------------------
 # Auth helpers
 # ---------------------------------------------------------------------------
 

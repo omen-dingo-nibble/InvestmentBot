@@ -57,7 +57,7 @@ def _save_qr(file_field_name: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-@bp.route("/login", methods=["GET", "POST"])
+@bp.route("/admin/login", methods=["GET", "POST"])
 def login():
     if "admin_id" in session:
         return redirect(url_for("main.dashboard"))
@@ -91,6 +91,12 @@ def login():
     return render_template("login.html", error=error)
 
 
+@bp.route("/login", methods=["GET", "POST"])
+def login_compat():
+    """Legacy /login redirect for backwards compat."""
+    return redirect(url_for("main.login"))
+
+
 @bp.route("/logout")
 def logout():
     admin_id = session.get("admin_id")
@@ -112,7 +118,7 @@ def logout():
 # ---------------------------------------------------------------------------
 
 
-@bp.route("/")
+@bp.route("/admin")
 @login_required
 def dashboard():
     db = get_db()

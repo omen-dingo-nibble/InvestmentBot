@@ -58,8 +58,9 @@ def create_app() -> Flask:
     from web.routes import bp
     app.register_blueprint(bp)
 
-    from web.user_portal import portal
+    from web.user_portal import portal, root_bp
     app.register_blueprint(portal)
+    app.register_blueprint(root_bp)
 
     # Context processors
     @app.context_processor
@@ -135,7 +136,6 @@ def login_required(f):
             return redirect(url_for("main.login"))
         return f(*args, **kwargs)
     return decorated
-
 
 def get_current_admin() -> Optional[dict]:
     admin_id = session.get("admin_id")

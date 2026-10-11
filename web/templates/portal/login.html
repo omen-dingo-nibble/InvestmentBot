@@ -2,144 +2,556 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Login — Gyokuro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gyokuro — Investment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
-            --gyo-green:  #1DB954;
-            --gyo-navy:   #0A0F1E;
-            --gyo-card:   #1A2235;
-            --gyo-border: #2A3450;
-            --gyo-text:   #F0F4FF;
-            --gyo-muted:  #8896B3;
+            --gyo-green:      #1DB954;
+            --gyo-green-dark: #15883D;
+            --gyo-green-glow: rgba(29,185,84,.18);
+            --gyo-navy:       #0A0F1E;
+            --gyo-surface:    #111827;
+            --gyo-card:       #1A2235;
+            --gyo-card2:      #1F2A40;
+            --gyo-border:     #2A3450;
+            --gyo-text:       #F0F4FF;
+            --gyo-muted:      #8896B3;
+            --gyo-gold:       #F59E0B;
+            --nav-h:          68px;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background: var(--gyo-navy);
-            color: var(--gyo-text);
-            font-family: 'Inter', sans-serif;
+
+        /* ── Full-page phone wrapper ── */
+        html, body {
             min-height: 100vh;
+            background: #070c14;
+            font-family: 'Inter', system-ui, sans-serif;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 24px;
         }
-        .logo {
-            width: 72px; height: 72px;
-            background: linear-gradient(135deg, #0d5c2e, var(--gyo-green));
-            border-radius: 20px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; font-weight: 800; color: #fff;
-            margin: 0 auto 20px;
-            box-shadow: 0 0 30px rgba(29,185,84,.3);
-        }
-        h1 { font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 8px; }
-        .sub { font-size: .9rem; color: var(--gyo-muted); text-align: center; margin-bottom: 32px; }
-        .card {
-            background: var(--gyo-card);
-            border: 1px solid var(--gyo-border);
-            border-radius: 20px;
-            padding: 28px 24px;
+
+        /* Phone shell */
+        .phone-shell {
             width: 100%;
-            max-width: 400px;
-        }
-        .step {
+            max-width: 390px;
+            min-height: 100vh;
+            background: var(--gyo-navy);
+            position: relative;
+            overflow: hidden;
             display: flex;
-            gap: 14px;
-            align-items: flex-start;
-            margin-bottom: 18px;
+            flex-direction: column;
         }
-        .step-num {
-            width: 32px; height: 32px;
-            background: rgba(29,185,84,.15);
-            color: var(--gyo-green);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: .9rem;
-            flex-shrink: 0;
+
+        /* On larger screens show phone chrome */
+        @media (min-width: 500px) {
+            body { padding: 24px 0; align-items: flex-start; justify-content: center; }
+            .phone-shell {
+                min-height: auto;
+                height: 820px;
+                border-radius: 40px;
+                box-shadow:
+                    0 0 0 2px #1a2235,
+                    0 0 0 4px #0d1520,
+                    0 30px 80px rgba(0,0,0,.7),
+                    0 0 120px rgba(29,185,84,.06);
+                overflow: hidden;
+            }
+
+            /* Notch */
+            .phone-shell::before {
+                content: '';
+                position: absolute;
+                top: 0; left: 50%;
+                transform: translateX(-50%);
+                width: 120px; height: 28px;
+                background: #0a0f0d;
+                border-radius: 0 0 18px 18px;
+                z-index: 999;
+            }
         }
-        .step-body strong { font-size: .9rem; display: block; margin-bottom: 2px; }
-        .step-body small { color: var(--gyo-muted); font-size: .8rem; }
-        .tg-btn {
-            display: block;
-            width: 100%;
-            background: linear-gradient(135deg, #0d5c2e, var(--gyo-green));
-            color: #fff;
-            text-decoration: none;
-            text-align: center;
-            padding: 14px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: .95rem;
-            margin-top: 20px;
-            box-shadow: 0 4px 20px rgba(29,185,84,.25);
+
+        /* ── Scrollable content ── */
+        .phone-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: calc(var(--nav-h) + 8px);
         }
-        .error-box {
-            background: rgba(239,68,68,.1);
-            border: 1px solid rgba(239,68,68,.3);
-            border-radius: 12px;
-            padding: 12px 16px;
-            font-size: .85rem;
-            color: #FCA5A5;
-            margin-bottom: 16px;
+
+        .phone-content::-webkit-scrollbar { display: none; }
+
+        /* ── Top bar ── */
+        .top-bar {
+            background: var(--gyo-surface);
+            padding: 36px 20px 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--gyo-border);
+            flex-shrink: 0;
         }
-        .divider {
-            border: none;
+
+        .top-bar .greeting { font-size: .68rem; color: var(--gyo-muted); font-weight: 500; }
+        .top-bar .brand-name { font-size: 1rem; font-weight: 800; color: var(--gyo-text); }
+
+        .top-bar .logo-mark {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .65rem; font-weight: 800; color: #fff;
+            letter-spacing: 0; line-height: 1.1; text-align: center;
+            box-shadow: 0 0 12px var(--gyo-green-glow);
+        }
+
+        .notif-btn {
+            width: 34px; height: 34px;
+            background: var(--gyo-card);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--gyo-muted); font-size: .9rem;
+            border: 1px solid var(--gyo-border);
+        }
+
+        /* ── Balance card ── */
+        .balance-card {
+            margin: 14px 16px;
+            background: linear-gradient(135deg, #0d2d4a 0%, #0f3d25 100%);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(29,185,84,.22);
+            position: relative;
+            overflow: hidden;
+            filter: blur(0px);
+        }
+
+        .balance-card::after {
+            content: '';
+            position: absolute;
+            right: -15px; top: -15px;
+            width: 120px; height: 120px;
+            background: radial-gradient(circle, rgba(29,185,84,.1) 0%, transparent 70%);
+        }
+
+        .balance-card .label {
+            font-size: .65rem; color: rgba(255,255,255,.5);
+            text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600;
+        }
+
+        .balance-card .amount {
+            font-size: 2.2rem; font-weight: 800; color: #fff;
+            line-height: 1.1; margin: 4px 0;
+            filter: blur(5px);
+            user-select: none;
+        }
+
+        .balance-card .sub { font-size: .75rem; color: rgba(255,255,255,.45); }
+
+        .balance-card .btn-row {
+            display: flex; gap: 10px; margin-top: 16px;
+        }
+
+        .balance-card .btn-row a {
+            flex: 1; padding: 10px 0;
+            border-radius: 30px; font-size: .83rem; font-weight: 700;
+            text-align: center; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+
+        .btn-topup  { background: #fff; color: #0A1F0F; }
+        .btn-wd     { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.15); }
+
+        /* ── Get started card ── */
+        .card-block {
+            margin: 0 16px 14px;
+            background: var(--gyo-card);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--gyo-border);
+        }
+
+        .card-block .cb-title { font-size: .9rem; font-weight: 700; }
+        .card-block .cb-badge {
+            background: var(--gyo-green-glow); color: var(--gyo-green);
+            font-size: .68rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 20px; margin-left: 8px;
+        }
+
+        .gs-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 0; border-bottom: 1px solid var(--gyo-border);
+        }
+        .gs-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+        .gs-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: var(--gyo-card2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .95rem; flex-shrink: 0;
+        }
+
+        .gs-icon.lit {
+            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            box-shadow: 0 0 10px var(--gyo-green-glow);
+        }
+
+        .gs-text strong { font-size: .85rem; font-weight: 700; display: block; }
+        .gs-text small  { font-size: .72rem; color: var(--gyo-muted); }
+
+        .gs-arrow {
+            margin-left: auto;
+            width: 26px; height: 26px;
+            background: var(--gyo-green); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: .8rem; flex-shrink: 0;
+        }
+
+        /* ── Section head ── */
+        .section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 20px 6px;
+        }
+
+        .section-head h3 { font-size: .95rem; font-weight: 700; color: var(--gyo-text); }
+        .section-head small { font-size: .75rem; color: var(--gyo-muted); }
+
+        /* ── Today task row ── */
+        .task-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px;
+            background: var(--gyo-card);
+            border-radius: 14px;
+            margin: 0 16px 10px;
+            border: 1px solid var(--gyo-border);
+        }
+
+        .task-icon {
+            width: 42px; height: 42px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; flex-shrink: 0;
+        }
+
+        .task-title { font-weight: 700; font-size: .875rem; }
+        .task-sub   { font-size: .72rem; color: var(--gyo-muted); }
+
+        .task-btn {
+            margin-left: auto;
+            background: var(--gyo-gold); color: #000;
+            font-size: .75rem; font-weight: 700;
+            padding: 6px 14px; border-radius: 20px;
+            border: none; white-space: nowrap; flex-shrink: 0;
+            text-decoration: none; cursor: pointer;
+        }
+
+        /* ── Bottom nav ── */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: var(--nav-h);
+            background: var(--gyo-surface);
             border-top: 1px solid var(--gyo-border);
-            margin: 20px 0;
+            display: flex; align-items: flex-start;
+            justify-content: space-around;
+            padding-top: 8px;
+            flex-shrink: 0;
+            z-index: 50;
         }
-        .note { font-size: .78rem; color: var(--gyo-muted); text-align: center; margin-top: 16px; }
+
+        .nav-item {
+            flex: 1;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 3px;
+            text-decoration: none;
+            color: var(--gyo-muted);
+            font-size: .65rem; font-weight: 600;
+            padding: 0 2px;
+        }
+
+        .nav-item i { font-size: 1.3rem; line-height: 1; }
+
+        .nav-item.active { color: var(--gyo-green); }
+
+        .nav-badge {
+            position: absolute; top: -2px; right: 16%;
+            background: #EF4444; color: #fff;
+            font-size: .55rem; font-weight: 700;
+            min-width: 15px; height: 15px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 3px;
+        }
+
+        /* ── Announcement modal ── */
+        .modal-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.75);
+            z-index: 200;
+            display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity .25s;
+        }
+
+        .modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+        .modal-sheet {
+            background: var(--gyo-card);
+            width: 100%; max-width: 390px;
+            border-radius: 24px 24px 0 0;
+            padding: 20px 20px 36px;
+            transform: translateY(100%);
+            transition: transform .3s cubic-bezier(.4,0,.2,1);
+            position: relative;
+        }
+
+        .modal-backdrop.open .modal-sheet { transform: translateY(0); }
+
+        .modal-close {
+            position: absolute; top: 14px; right: 14px;
+            width: 28px; height: 28px;
+            background: var(--gyo-card2); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: none;
+            color: var(--gyo-muted); font-size: .85rem;
+        }
+
+        .modal-icon {
+            width: 48px; height: 48px; border-radius: 14px;
+            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; margin-bottom: 10px;
+        }
+
+        .modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 10px; }
+
+        .ann-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 6px 0; font-size: .83rem; line-height: 1.5; color: var(--gyo-muted);
+        }
+
+        .ann-item .ann-emoji { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+        .tg-open-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%;
+            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            color: #fff; border: none;
+            border-radius: 14px; padding: 14px;
+            font-size: .95rem; font-weight: 700;
+            margin-top: 18px; cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(29,185,84,.3);
+        }
+
+        /* ── Login CTA that appears below tasks (not modal) ── */
+        .login-cta {
+            margin: 0 16px 14px;
+            background: linear-gradient(135deg, rgba(29,185,84,.08), rgba(29,185,84,.04));
+            border: 1px solid rgba(29,185,84,.2);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .login-cta p {
+            font-size: .82rem; color: var(--gyo-muted); margin-bottom: 12px; line-height: 1.5;
+        }
+
+        .login-cta-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            color: #fff; border: none; border-radius: 20px;
+            padding: 10px 22px; font-size: .88rem; font-weight: 700;
+            text-decoration: none; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(29,185,84,.25);
+        }
     </style>
 </head>
 <body>
-    <div class="logo">GY</div>
-    <h1>Gyokuro</h1>
-    <p class="sub">Grow Your Wealth. Sip the Returns.</p>
 
-    <div class="card">
+<div class="phone-shell">
+
+    <!-- Top bar -->
+    <div class="top-bar">
+        <div>
+            <div class="greeting">Good morning</div>
+            <div class="brand-name">Welcome to Gyokuro</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <div class="logo-mark">玉<br>露</div>
+            <div class="notif-btn"><i class="bi bi-bell"></i></div>
+        </div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="phone-content">
+
+        <!-- Balance card (blurred — not logged in) -->
+        <div class="balance-card">
+            <div class="label">TOTAL BALANCE</div>
+            <div class="amount">₱●●●.●●</div>
+            <div class="sub">Sign in to see your balance</div>
+            <div class="btn-row">
+                <a href="#" class="btn-topup" onclick="openAnn();return false;">⬇ Top up</a>
+                <a href="#" class="btn-wd"    onclick="openAnn();return false;">↗ Withdraw</a>
+            </div>
+        </div>
+
+        <!-- Get started steps -->
+        <div class="card-block">
+            <div style="display:flex;align-items:center;margin-bottom:10px;">
+                <div class="cb-title">Get started</div>
+                <span class="cb-badge">0/3</span>
+                <span style="margin-left:auto;font-size:.72rem;color:var(--gyo-muted);">• Next: Top up</span>
+            </div>
+
+            <div class="gs-row">
+                <div class="gs-icon lit"><i class="bi bi-wallet2" style="color:#fff;"></i></div>
+                <div class="gs-text">
+                    <strong>Top up</strong>
+                    <small>Add money to your Gyokuro balance.</small>
+                </div>
+                <div class="gs-arrow"><i class="bi bi-arrow-right"></i></div>
+            </div>
+            <div class="gs-row">
+                <div class="gs-icon"><i class="bi bi-bar-chart-line" style="color:var(--gyo-muted);"></i></div>
+                <div class="gs-text">
+                    <strong>Buy a plan</strong>
+                    <small>Pay once and get paid every day.</small>
+                </div>
+            </div>
+            <div class="gs-row">
+                <div class="gs-icon"><i class="bi bi-people" style="color:var(--gyo-muted);"></i></div>
+                <div class="gs-text">
+                    <strong>Invite a friend</strong>
+                    <small>Earn a commission when they buy a plan.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today section -->
+        <div class="section-head">
+            <h3>Today</h3>
+            <small>
+                <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:conic-gradient(var(--gyo-green) 66%,var(--gyo-border) 0);vertical-align:middle;margin-right:4px;"></span>
+                2 of 3 done
+            </small>
+        </div>
+
+        <div class="task-row">
+            <div class="task-icon" style="background:rgba(245,158,11,.15);">🗓️</div>
+            <div>
+                <div class="task-title">Daily check-in</div>
+                <div class="task-sub">Get ₱5–₱10 today</div>
+            </div>
+            <a href="{{ url_for('portal.portal_login_page') }}" class="task-btn">Check in</a>
+        </div>
+
+        <div class="task-row">
+            <div class="task-icon" style="background:rgba(29,185,84,.1);">🌀</div>
+            <div>
+                <div class="task-title">Lucky Spin</div>
+                <div class="task-sub">Buy your first plan to get a spin</div>
+            </div>
+        </div>
+
+        <!-- Login CTA -->
+        <div class="login-cta">
+            <p>This is a preview. Sign in via Telegram to access your full dashboard, check your balance, and manage investments.</p>
+            <a href="https://t.me/{{ bot_username }}" class="login-cta-btn" target="_blank">
+                <i class="bi bi-telegram"></i> Open Gyokuro Bot
+            </a>
+            <div style="margin-top:10px;font-size:.72rem;color:var(--gyo-muted);">
+                Then send <code style="background:rgba(29,185,84,.12);color:var(--gyo-green);padding:1px 6px;border-radius:4px;">/weblogin</code> to get your login link
+            </div>
+        </div>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% for cat, msg in messages %}
-        <div class="error-box"><i class="bi bi-exclamation-circle"></i> {{ msg }}</div>
+        <div style="margin:0 16px 12px;padding:10px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:10px;font-size:.82rem;color:#FCA5A5;">
+            <i class="bi bi-exclamation-circle me-1"></i>{{ msg }}
+        </div>
         {% endfor %}
         {% endwith %}
 
-        <p style="font-weight:700;font-size:.95rem;margin-bottom:16px;">How to access your dashboard</p>
+    </div><!-- /phone-content -->
 
-        <div class="step">
-            <div class="step-num">1</div>
-            <div class="step-body">
-                <strong>Open Gyokuro on Telegram</strong>
-                <small>Find the bot using the button below</small>
-            </div>
-        </div>
-        <div class="step">
-            <div class="step-num">2</div>
-            <div class="step-body">
-                <strong>Send /weblogin</strong>
-                <small>The bot will reply with a secure one-time login link</small>
-            </div>
-        </div>
-        <div class="step">
-            <div class="step-num">3</div>
-            <div class="step-body">
-                <strong>Tap the link</strong>
-                <small>It opens your dashboard automatically — valid for 5 minutes</small>
-            </div>
-        </div>
-
-        <hr class="divider">
-
-        <a href="https://t.me/{{ bot_username }}" class="tg-btn" target="_blank">
-            <i class="bi bi-telegram me-2"></i> Open Gyokuro on Telegram
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+        <a href="#" class="nav-item active">
+            <i class="bi bi-house-fill"></i>
+            <span>Home</span>
         </a>
-
-        <p class="note">Your login link is unique and single-use. Never share it with anyone.</p>
+        <a href="#" class="nav-item" onclick="openAnn();return false;">
+            <i class="bi bi-grid-fill"></i>
+            <span>Plans</span>
+        </a>
+        <a href="#" class="nav-item" style="position:relative;" onclick="openAnn();return false;">
+            <i class="bi bi-gift-fill"></i>
+            <span class="nav-badge">1</span>
+            <span>Rewards</span>
+        </a>
+        <a href="#" class="nav-item" onclick="openAnn();return false;">
+            <i class="bi bi-people-fill"></i>
+            <span>Invite</span>
+        </a>
+        <a href="#" class="nav-item" onclick="openAnn();return false;">
+            <i class="bi bi-person-circle"></i>
+            <span>Me</span>
+        </a>
     </div>
+
+</div><!-- /phone-shell -->
+
+
+<!-- ── Announcement Modal ── -->
+<div class="modal-backdrop" id="annModal">
+    <div class="modal-sheet">
+        <button class="modal-close" onclick="closeAnn()"><i class="bi bi-x"></i></button>
+
+        <div class="modal-icon"><i class="bi bi-megaphone-fill" style="color:#fff;"></i></div>
+        <div class="modal-title">Announcement</div>
+
+        <div class="ann-item"><span class="ann-emoji">🎉</span><span>Welcome to Gyokuro!</span></div>
+        <div class="ann-item"><span class="ann-emoji">🚀</span><span>The Gyokuro investment platform is officially launched!</span></div>
+        <div class="ann-item"><span class="ann-emoji">🎁</span><span>Sign up now and receive a welcome bonus of ₱50!</span></div>
+        <div class="ann-item"><span class="ann-emoji">💰</span><span><strong style="color:var(--gyo-text);">Team Commissions:</strong><br>
+            Level 1 Commission: 35%<br>
+            Level 2 Commission: 2%<br>
+            Level 3 Commission: 1%
+        </span></div>
+        <div class="ann-item"><span class="ann-emoji">🔥</span><span>Referral rewards of up to ₱15,400!</span></div>
+        <div class="ann-item"><span class="ann-emoji">👉</span><span>To learn more about additional bonuses, benefits, and promotional offers, feel free to contact our team.</span></div>
+        <div class="ann-item"><span class="ann-emoji">🤝</span><span>Join Gyokuro now and enjoy our exclusive benefits!</span></div>
+
+        <a href="https://t.me/{{ bot_username }}" class="tg-open-btn" target="_blank">
+            <i class="bi bi-telegram"></i> Telegram group
+        </a>
+    </div>
+</div>
+
+<script>
+function openAnn() {
+    document.getElementById('annModal').classList.add('open');
+}
+function closeAnn() {
+    document.getElementById('annModal').classList.remove('open');
+}
+// Auto-show announcement on first visit
+if (!sessionStorage.getItem('gyo_ann')) {
+    setTimeout(openAnn, 600);
+    sessionStorage.setItem('gyo_ann', '1');
+}
+// Close on backdrop click
+document.getElementById('annModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAnn();
+});
+</script>
 </body>
 </html>
