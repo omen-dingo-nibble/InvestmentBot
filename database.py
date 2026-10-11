@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS users (
     user_id            INTEGER PRIMARY KEY,
     username           TEXT,
     full_name          TEXT,
+    phone              TEXT UNIQUE,
+    password_hash      TEXT,
     referral_code      TEXT UNIQUE NOT NULL,
     referred_by        INTEGER,
     balance            REAL NOT NULL DEFAULT 0,
@@ -269,6 +271,21 @@ class Database:
                 self._conn.execute("ALTER TABLE plans ADD COLUMN image TEXT")
             except Exception:
                 pass  # column already exists
+
+            # Migrate: add phone/password columns to users if missing
+            try:
+                self._conn.execute("ALTER TABLE users ADD COLUMN phone TEXT")
+            except Exception:
+                pass
+            try:
+                self._conn.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+            except Exception:
+                pass
+            # Create phone index idempotently
+            try:
+                self._conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone)")
+            except Exception:
+                pass
 
             self._conn.execute("BEGIN")
             try:
@@ -1125,6 +1142,120 @@ class Database:
                 (user_id,),
             )
         return row["c"] if row else 0
+
+    # ------------------------------------------------------------------
+    # Phone + password authentication
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _hash_password(password: str) -> str:
+        import hashlib
+        return hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"),
+            b"gyokuro_user_salt_v1", 200000
+        ).hex()
+
+    @staticmethod
+    def _normalize_phone(phone: str) -> str:
+        """Strip spaces/dashes/parens; ensure leading +."""
+        import re
+        digits = re.sub(r"[\s\-\(\)\.]+", "", phone.strip())
+        if not digits.startswith("+"):
+            digits = "+" + digits
+        return digits
+
+    def register_phone_user(
+        self,
+        phone: str,
+        password: str,
+        full_name: str = "",
+        referral_code_used: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Register a brand-new user by phone number.
+
+        Returns the created user row.
+        Raises ValueError if the phone is already registered.
+        """
+        phone = self._normalize_phone(phone)
+        pw_hash = self._hash_password(password)
+
+        with self._lock:
+            existing = self.query_one("SELECT user_id FROM users WHERE phone = ?", (phone,))
+            if existing:
+                raise ValueError("phone_taken")
+
+            # Generate a unique numeric user_id (phone-based users don't have Telegram IDs)
+            # Use negative IDs to avoid collisions with Telegram user IDs (which are positive)
+            import random
+            while True:
+                fake_uid = -random.randint(100_000_000, 999_999_999)
+                if not self.query_one("SELECT 1 FROM users WHERE user_id = ?", (fake_uid,)):
+                    break
+
+            code = _new_referral_code()
+            while self.query_one("SELECT 1 FROM users WHERE referral_code = ?", (code,)):
+                code = _new_referral_code()
+
+            self.execute(
+                """INSERT INTO users
+                   (user_id, username, full_name, phone, password_hash,
+                    referral_code, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (fake_uid, phone, full_name or phone, phone, pw_hash, code, _now(), _now()),
+            )
+
+            user = self.query_one("SELECT * FROM users WHERE user_id = ?", (fake_uid,))
+
+            # Handle referral
+            if referral_code_used:
+                referrer = self.query_one(
+                    "SELECT user_id FROM users WHERE referral_code = ?", (referral_code_used,)
+                )
+                if referrer and referrer["user_id"] != fake_uid:
+                    self.set_referrer(fake_uid, referrer["user_id"])
+
+            return user
+
+    def get_user_by_phone(self, phone: str) -> Optional[Dict[str, Any]]:
+        phone = self._normalize_phone(phone)
+        return self.query_one("SELECT * FROM users WHERE phone = ?", (phone,))
+
+    def verify_phone_password(self, phone: str, password: str) -> Optional[Dict[str, Any]]:
+        """Return user row if phone+password are valid, else None."""
+        user = self.get_user_by_phone(phone)
+        if not user:
+            return None
+        if not user.get("password_hash"):
+            return None
+        if user["password_hash"] != self._hash_password(password):
+            return None
+        return user
+
+    def set_user_phone(self, user_id: int, phone: str, password: str) -> bool:
+        """Attach a phone+password to an existing Telegram user.
+
+        Returns False if the phone is already taken by another user.
+        """
+        phone = self._normalize_phone(phone)
+        pw_hash = self._hash_password(password)
+        with self._lock:
+            existing = self.query_one(
+                "SELECT user_id FROM users WHERE phone = ? AND user_id != ?", (phone, user_id)
+            )
+            if existing:
+                return False
+            self.execute(
+                "UPDATE users SET phone = ?, password_hash = ?, updated_at = ? WHERE user_id = ?",
+                (phone, pw_hash, _now(), user_id),
+            )
+            return True
+
+    def update_user_password(self, user_id: int, new_password: str) -> None:
+        pw_hash = self._hash_password(new_password)
+        self.execute(
+            "UPDATE users SET password_hash = ?, updated_at = ? WHERE user_id = ?",
+            (pw_hash, _now(), user_id),
+        )
 
 
 # ---------------------------------------------------------------------------

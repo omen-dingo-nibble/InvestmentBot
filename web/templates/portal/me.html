@@ -41,8 +41,8 @@
     <div class="sub-label earned">✅ Withdrawal available</div>
     {% endif %}
     <div class="btn-row">
-        <a href="https://t.me/{{ bot_username }}" class="btn-balance btn-topup" target="_blank">⬇ Top up</a>
-        <a href="https://t.me/{{ bot_username }}" class="btn-balance btn-withdraw" target="_blank">↗ Withdraw</a>
+        <a href="{{ url_for('portal.deposit') }}" class="btn-balance btn-topup">⬇ Top up</a>
+        <a href="{{ url_for('portal.withdraw') }}" class="btn-balance btn-withdraw">↗ Withdraw</a>
     </div>
 </div>
 

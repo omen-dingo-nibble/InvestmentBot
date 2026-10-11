@@ -1079,11 +1079,11 @@
 <div class="top-bar">
     <div>
         <div class="greeting">Good {% if now.hour < 12 %}morning{% elif now.hour < 18 %}afternoon{% else %}evening{% endif %}</div>
-        <div class="user-name">Welcome to Gyokuro</div>
+        <div class="user-name">{{ session.get('portal_user_name', 'Investor') }}</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
         <div class="brand-logo">GY</div>
-        <a href="{{ url_for('portal.me') }}" class="notif-btn"><i class="bi bi-person"></i></a>
+        <a href="{{ url_for('portal.me') }}" class="notif-btn" title="Profile"><i class="bi bi-person"></i></a>
     </div>
 </div>
 {% endblock %}

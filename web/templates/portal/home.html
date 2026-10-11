@@ -11,8 +11,8 @@
         {% else %}No income yet today{% endif %}
     </div>
     <div class="btn-row">
-        <a href="https://t.me/{{ bot_username }}" class="btn-balance btn-topup" target="_blank">⬇ Top up</a>
-        <a href="https://t.me/{{ bot_username }}" class="btn-balance btn-withdraw" target="_blank">↗ Withdraw</a>
+        <a href="{{ url_for('portal.deposit') }}" class="btn-balance btn-topup">⬇ Top up</a>
+        <a href="{{ url_for('portal.withdraw') }}" class="btn-balance btn-withdraw">↗ Withdraw</a>
     </div>
 </div>
 
@@ -40,7 +40,7 @@
             {% if has_dep %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-wallet2"></i>{% endif %}
         </div>
         <div class="step-text"><strong>Top up</strong><small>Add money to your Gyokuro balance.</small></div>
-        {% if not has_dep %}<a href="https://t.me/{{ bot_username }}" class="step-arrow" target="_blank"><i class="bi bi-arrow-right"></i></a>{% endif %}
+        {% if not has_dep %}<a href="{{ url_for('portal.deposit') }}" class="step-arrow"><i class="bi bi-arrow-right"></i></a>{% endif %}
     </div>
     <div class="gs-step">
         <div class="step-icon {% if has_inv %}done{% elif has_dep %}active{% endif %}">

@@ -1,0 +1,241 @@
+{% extends "portal/base.html" %}
+{% block title %}Deposit — Gyokuro{% endblock %}
+
+{% block topbar %}
+<div class="top-bar">
+    <a href="{{ url_for('portal.home') }}" style="color:var(--gyo-muted);font-size:1.2rem;text-decoration:none;margin-right:8px;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div style="flex:1;">
+        <div style="font-size:1.15rem;font-weight:800;color:var(--gyo-text);">Top Up</div>
+        <div style="font-size:.72rem;color:var(--gyo-muted);">Send crypto and submit your transaction</div>
+    </div>
+    <div class="brand-logo">GY</div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% if success %}
+<!-- Success state -->
+<div style="margin:24px 16px;">
+    <div style="background:rgba(29,185,84,.08);border:1px solid rgba(29,185,84,.2);border-radius:18px;padding:28px 20px;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:12px;">✅</div>
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:8px;">Deposit Submitted!</div>
+        <div style="font-size:.88rem;color:var(--gyo-muted);line-height:1.6;margin-bottom:20px;">{{ success }}</div>
+        <a href="{{ url_for('portal.home') }}" style="display:inline-block;background:var(--gyo-green);color:#fff;font-weight:700;padding:12px 28px;border-radius:12px;text-decoration:none;">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+{% else %}
+
+{% if error %}
+<div style="margin:12px 16px 0;padding:12px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:12px;font-size:.85rem;color:#FCA5A5;display:flex;align-items:center;gap:8px;">
+    <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
+</div>
+{% endif %}
+
+<!-- Info banner -->
+<div style="margin:14px 16px 0;background:linear-gradient(135deg,#0c1a3a,#0a2518);border:1px solid var(--gyo-border);border-radius:16px;padding:16px;">
+    <div style="font-size:.78rem;font-weight:700;color:var(--gyo-gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">How to deposit</div>
+    <ol style="font-size:.82rem;color:var(--gyo-muted);line-height:1.7;padding-left:16px;margin:0;">
+        <li>Choose a cryptocurrency below</li>
+        <li>Send to the wallet address shown</li>
+        <li>Fill in the form and submit your transaction</li>
+        <li>Our team verifies and credits your balance within 30 min</li>
+    </ol>
+    <div style="margin-top:10px;font-size:.78rem;color:var(--gyo-muted);">
+        Minimum deposit: <strong style="color:var(--gyo-text);">₱{{ "{:,.2f}".format(min_dep_php) }}</strong>
+    </div>
+</div>
+
+{% if not active_wallets %}
+<!-- No wallets configured -->
+<div style="margin:20px 16px;text-align:center;padding:32px;background:var(--gyo-card);border-radius:16px;border:1px solid var(--gyo-border);">
+    <div style="font-size:2rem;margin-bottom:8px;">🔧</div>
+    <div style="font-size:.9rem;color:var(--gyo-muted);">Crypto wallets are being set up.<br>Please use the Telegram bot to deposit for now.</div>
+    <a href="https://t.me/{{ bot_username }}" target="_blank"
+       style="display:inline-flex;align-items:center;gap:6px;margin-top:16px;background:#28a8e8;color:#fff;font-weight:700;padding:10px 20px;border-radius:12px;text-decoration:none;">
+        <i class="bi bi-telegram"></i> Open Telegram Bot
+    </a>
+</div>
+
+{% else %}
+
+<form method="POST" action="{{ url_for('portal.deposit') }}" id="depositForm" novalidate>
+
+    <!-- Wallet selector tabs -->
+    <div style="margin:14px 16px 0;font-size:.78rem;font-weight:700;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        Select payment method
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin:0 16px 14px;">
+    {% for key, wallet in active_wallets.items() %}
+    <label style="display:flex;align-items:center;gap:12px;background:var(--gyo-card);border:2px solid var(--gyo-border);border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s;"
+           id="wallet_label_{{ loop.index }}" onclick="selectWallet('{{ key }}', {{ loop.index }})">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:var(--gyo-green);flex-shrink:0;">
+            {{ wallet.icon }}
+        </div>
+        <div style="flex:1;">
+            <div style="font-weight:700;font-size:.9rem;">{{ wallet.label }}</div>
+            <div style="font-size:.73rem;color:var(--gyo-muted);font-family:monospace;word-break:break-all;margin-top:2px;">
+                {{ wallet.address[:24] }}…
+            </div>
+        </div>
+        <input type="radio" name="crypto_currency" value="{{ key }}"
+               style="accent-color:var(--gyo-green);width:18px;height:18px;flex-shrink:0;"
+               {% if loop.first %}checked{% endif %}
+               onchange="selectWallet('{{ key }}', {{ loop.index }})">
+    </label>
+    {% endfor %}
+    </div>
+
+    <!-- Wallet address display + copy -->
+    {% for key, wallet in active_wallets.items() %}
+    <div id="addr_{{ loop.index }}" style="margin:0 16px 14px;{% if not loop.first %}display:none;{% endif %}">
+        {% if wallet.qr %}
+        <div style="background:var(--gyo-card);border:1px solid var(--gyo-border);border-radius:16px;padding:16px;text-align:center;">
+            <img src="{{ url_for('static', filename='qr/' + wallet.qr) }}"
+                 alt="QR Code for {{ key }}"
+                 style="width:160px;height:160px;border-radius:10px;margin-bottom:12px;background:#fff;padding:4px;"
+                 onerror="this.style.display='none'">
+            <div style="font-size:.72rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">{{ key }} Address</div>
+            <div style="font-family:monospace;font-size:.78rem;word-break:break-all;color:var(--gyo-text);background:rgba(255,255,255,.04);border-radius:8px;padding:10px;line-height:1.6;margin-bottom:10px;">
+                {{ wallet.address }}
+            </div>
+            <button type="button" onclick="copyAddr('{{ wallet.address }}')"
+                    style="background:var(--gyo-green-glow);color:var(--gyo-green);border:none;border-radius:8px;padding:8px 18px;font-size:.82rem;font-weight:700;cursor:pointer;">
+                <i class="bi bi-copy"></i> Copy Address
+            </button>
+        </div>
+        {% else %}
+        <div style="background:var(--gyo-card);border:1px solid var(--gyo-border);border-radius:16px;padding:16px;">
+            <div style="font-size:.72rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">{{ key }} Address</div>
+            <div style="font-family:monospace;font-size:.78rem;word-break:break-all;color:var(--gyo-text);background:rgba(255,255,255,.04);border-radius:8px;padding:10px;line-height:1.6;margin-bottom:10px;">
+                {{ wallet.address }}
+            </div>
+            <button type="button" onclick="copyAddr('{{ wallet.address }}')"
+                    style="background:var(--gyo-green-glow);color:var(--gyo-green);border:none;border-radius:8px;padding:8px 18px;font-size:.82rem;font-weight:700;cursor:pointer;">
+                <i class="bi bi-copy"></i> Copy Address
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <!-- Amount and tx hash -->
+    <div style="margin:0 16px;">
+
+        <!-- Amount -->
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:.78rem;font-weight:600;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                Amount Sent (₱) <span style="color:#EF4444;">*</span>
+            </label>
+            <div style="position:relative;">
+                <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--gyo-green);font-weight:700;font-size:1rem;pointer-events:none;">₱</span>
+                <input type="number"
+                       name="amount_php"
+                       id="amount_php"
+                       min="{{ min_dep_php }}"
+                       step="0.01"
+                       placeholder="{{ "{:,.0f}".format(min_dep_php) }}"
+                       value="{{ request.form.get('amount_php', '') }}"
+                       required
+                       style="width:100%;background:var(--gyo-card);border:1.5px solid var(--gyo-border);border-radius:12px;padding:12px 14px 12px 32px;font-size:.95rem;color:var(--gyo-text);font-family:'Inter',sans-serif;outline:none;"
+                       onfocus="this.style.borderColor='var(--gyo-green)'" onblur="this.style.borderColor='var(--gyo-border)'">
+            </div>
+            <div style="font-size:.72rem;color:var(--gyo-muted);margin-top:4px;">Min: ₱{{ "{:,.2f}".format(min_dep_php) }}</div>
+        </div>
+
+        <!-- TX hash (optional) -->
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:.78rem;font-weight:600;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                Transaction Hash <span style="color:var(--gyo-muted);font-weight:400;">(recommended)</span>
+            </label>
+            <input type="text"
+                   name="tx_hash"
+                   placeholder="Paste your blockchain transaction ID"
+                   value="{{ request.form.get('tx_hash', '') }}"
+                   style="width:100%;background:var(--gyo-card);border:1.5px solid var(--gyo-border);border-radius:12px;padding:12px 14px;font-size:.82rem;color:var(--gyo-text);font-family:monospace;outline:none;"
+                   onfocus="this.style.borderColor='var(--gyo-green)'" onblur="this.style.borderColor='var(--gyo-border)'">
+            <div style="font-size:.72rem;color:var(--gyo-muted);margin-top:4px;">Speeds up verification. Optional but recommended.</div>
+        </div>
+
+        <!-- Note -->
+        <div style="margin-bottom:20px;">
+            <label style="display:block;font-size:.78rem;font-weight:600;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                Note <span style="color:var(--gyo-muted);font-weight:400;">(optional)</span>
+            </label>
+            <input type="text"
+                   name="note"
+                   placeholder="e.g. Deposit for Gyokuro Gold plan"
+                   value="{{ request.form.get('note', '') }}"
+                   maxlength="120"
+                   style="width:100%;background:var(--gyo-card);border:1.5px solid var(--gyo-border);border-radius:12px;padding:12px 14px;font-size:.88rem;color:var(--gyo-text);font-family:'Inter',sans-serif;outline:none;"
+                   onfocus="this.style.borderColor='var(--gyo-green)'" onblur="this.style.borderColor='var(--gyo-border)'">
+        </div>
+
+        <button type="submit" id="depSubmitBtn"
+                style="width:100%;background:linear-gradient(135deg,#15883D,#1DB954);color:#fff;border:none;border-radius:14px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(29,185,84,.3);display:flex;align-items:center;justify-content:center;gap:8px;">
+            <i class="bi bi-send-fill"></i> Submit Deposit
+        </button>
+
+        <div style="margin-top:12px;font-size:.75rem;color:var(--gyo-muted);text-align:center;line-height:1.5;">
+            Once submitted, our team will review and credit your balance. Contact
+            <a href="https://t.me/{{ bot_username }}" target="_blank" style="color:var(--gyo-green);text-decoration:none;">{{ bot_username }}</a>
+            if you need assistance.
+        </div>
+    </div>
+
+</form>
+{% endif %}
+
+{% endif %}
+
+<div style="height:24px;"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Track the number of wallets to manage display
+const walletCount = {{ active_wallets|length }};
+
+function selectWallet(key, idx) {
+    for (let i = 1; i <= walletCount; i++) {
+        const label = document.getElementById('wallet_label_' + i);
+        const addr  = document.getElementById('addr_' + i);
+        if (i === idx) {
+            if (label) label.style.borderColor = 'var(--gyo-green)';
+            if (addr)  addr.style.display = 'block';
+        } else {
+            if (label) label.style.borderColor = 'var(--gyo-border)';
+            if (addr)  addr.style.display = 'none';
+        }
+    }
+}
+
+// Init: highlight first wallet
+if (walletCount > 0) selectWallet(null, 1);
+
+function copyAddr(addr) {
+    navigator.clipboard.writeText(addr).then(() => {
+        alert('Address copied to clipboard!');
+    }).catch(() => {
+        prompt('Copy this address:', addr);
+    });
+}
+
+// Loading state
+document.getElementById('depositForm')?.addEventListener('submit', function() {
+    const btn = document.getElementById('depSubmitBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span style="width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .6s linear infinite;"></span> Submitting…';
+    }
+});
+</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}

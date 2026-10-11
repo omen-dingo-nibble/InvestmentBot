@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gyokuro — Investment</title>
+    <title>{% if mode == 'register' %}Create Account{% else %}Sign In{% endif %} — Gyokuro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -20,538 +20,1085 @@
             --gyo-text:       #F0F4FF;
             --gyo-muted:      #8896B3;
             --gyo-gold:       #F59E0B;
-            --nav-h:          68px;
+            --gyo-red:        #EF4444;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* ── Full-page phone wrapper ── */
         html, body {
             min-height: 100vh;
-            background: #070c14;
+            background: #060b13;
             font-family: 'Inter', system-ui, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: var(--gyo-text);
         }
 
-        /* Phone shell */
-        .phone-shell {
-            width: 100%;
-            max-width: 390px;
+        /* ── Layout shell ── */
+        .auth-shell {
+            display: flex;
             min-height: 100vh;
-            background: var(--gyo-navy);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
         }
 
-        /* On larger screens show phone chrome */
-        @media (min-width: 500px) {
-            body { padding: 24px 0; align-items: flex-start; justify-content: center; }
-            .phone-shell {
-                min-height: auto;
-                height: 820px;
-                border-radius: 40px;
-                box-shadow:
-                    0 0 0 2px #1a2235,
-                    0 0 0 4px #0d1520,
-                    0 30px 80px rgba(0,0,0,.7),
-                    0 0 120px rgba(29,185,84,.06);
+        /* Left panel — decorative, hidden on mobile */
+        .auth-left {
+            display: none;
+        }
+
+        @media (min-width: 900px) {
+            .auth-left {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                flex: 1;
+                background: linear-gradient(160deg, #081a0f 0%, #0a0f1e 40%, #04111e 100%);
+                padding: 48px;
+                position: relative;
                 overflow: hidden;
             }
 
-            /* Notch */
-            .phone-shell::before {
+            .auth-left::before {
                 content: '';
                 position: absolute;
-                top: 0; left: 50%;
-                transform: translateX(-50%);
-                width: 120px; height: 28px;
-                background: #0a0f0d;
-                border-radius: 0 0 18px 18px;
-                z-index: 999;
+                top: -100px; left: -100px;
+                width: 500px; height: 500px;
+                background: radial-gradient(circle, rgba(29,185,84,.07) 0%, transparent 65%);
+                pointer-events: none;
+            }
+
+            .auth-left::after {
+                content: '';
+                position: absolute;
+                bottom: -80px; right: -80px;
+                width: 400px; height: 400px;
+                background: radial-gradient(circle, rgba(29,185,84,.05) 0%, transparent 65%);
+                pointer-events: none;
             }
         }
 
-        /* ── Scrollable content ── */
-        .phone-content {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            padding-bottom: calc(var(--nav-h) + 8px);
-        }
-
-        .phone-content::-webkit-scrollbar { display: none; }
-
-        /* ── Top bar ── */
-        .top-bar {
-            background: var(--gyo-surface);
-            padding: 36px 20px 12px;
+        .left-brand {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--gyo-border);
-            flex-shrink: 0;
+            gap: 12px;
         }
 
-        .top-bar .greeting { font-size: .68rem; color: var(--gyo-muted); font-weight: 500; }
-        .top-bar .brand-name { font-size: 1rem; font-weight: 800; color: var(--gyo-text); }
-
-        .top-bar .logo-mark {
-            width: 36px; height: 36px;
+        .left-brand .logo-mark {
+            width: 44px; height: 44px;
             background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
-            border-radius: 10px;
+            border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: .65rem; font-weight: 800; color: #fff;
-            letter-spacing: 0; line-height: 1.1; text-align: center;
-            box-shadow: 0 0 12px var(--gyo-green-glow);
+            font-size: .75rem; font-weight: 800; color: #fff;
+            letter-spacing: 0; line-height: 1.2; text-align: center;
+            box-shadow: 0 0 20px var(--gyo-green-glow);
         }
 
-        .notif-btn {
-            width: 34px; height: 34px;
-            background: var(--gyo-card);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--gyo-muted); font-size: .9rem;
-            border: 1px solid var(--gyo-border);
+        .left-brand .brand-wordmark {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--gyo-text);
+            letter-spacing: -.3px;
         }
 
-        /* ── Balance card ── */
-        .balance-card {
-            margin: 14px 16px;
-            background: linear-gradient(135deg, #0d2d4a 0%, #0f3d25 100%);
+        .left-hero {
+            z-index: 1;
+        }
+
+        .left-hero .hero-tag {
+            display: inline-block;
+            background: var(--gyo-green-glow);
+            color: var(--gyo-green);
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 4px 12px;
             border-radius: 20px;
-            padding: 20px;
-            border: 1px solid rgba(29,185,84,.22);
-            position: relative;
-            overflow: hidden;
-            filter: blur(0px);
+            text-transform: uppercase;
+            margin-bottom: 16px;
         }
 
-        .balance-card::after {
-            content: '';
-            position: absolute;
-            right: -15px; top: -15px;
-            width: 120px; height: 120px;
-            background: radial-gradient(circle, rgba(29,185,84,.1) 0%, transparent 70%);
+        .left-hero h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            line-height: 1.2;
+            color: var(--gyo-text);
+            margin-bottom: 16px;
         }
 
-        .balance-card .label {
-            font-size: .65rem; color: rgba(255,255,255,.5);
-            text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600;
+        .left-hero h1 .accent {
+            color: var(--gyo-green);
         }
 
-        .balance-card .amount {
-            font-size: 2.2rem; font-weight: 800; color: #fff;
-            line-height: 1.1; margin: 4px 0;
-            filter: blur(5px);
-            user-select: none;
+        .left-hero p {
+            font-size: .95rem;
+            color: var(--gyo-muted);
+            line-height: 1.6;
+            max-width: 380px;
+            margin-bottom: 32px;
         }
 
-        .balance-card .sub { font-size: .75rem; color: rgba(255,255,255,.45); }
-
-        .balance-card .btn-row {
-            display: flex; gap: 10px; margin-top: 16px;
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
         }
 
-        .balance-card .btn-row a {
-            flex: 1; padding: 10px 0;
-            border-radius: 30px; font-size: .83rem; font-weight: 700;
-            text-align: center; text-decoration: none;
-            display: flex; align-items: center; justify-content: center; gap: 5px;
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .btn-topup  { background: #fff; color: #0A1F0F; }
-        .btn-wd     { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.15); }
-
-        /* ── Get started card ── */
-        .card-block {
-            margin: 0 16px 14px;
-            background: var(--gyo-card);
-            border-radius: 16px;
-            padding: 16px;
+        .feature-item .fi-icon {
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.04);
             border: 1px solid var(--gyo-border);
-        }
-
-        .card-block .cb-title { font-size: .9rem; font-weight: 700; }
-        .card-block .cb-badge {
-            background: var(--gyo-green-glow); color: var(--gyo-green);
-            font-size: .68rem; font-weight: 700; padding: 2px 8px;
-            border-radius: 20px; margin-left: 8px;
-        }
-
-        .gs-row {
-            display: flex; align-items: center; gap: 12px;
-            padding: 10px 0; border-bottom: 1px solid var(--gyo-border);
-        }
-        .gs-row:last-child { border-bottom: none; padding-bottom: 0; }
-
-        .gs-icon {
-            width: 36px; height: 36px; border-radius: 10px;
-            background: var(--gyo-card2);
             display: flex; align-items: center; justify-content: center;
-            font-size: .95rem; flex-shrink: 0;
-        }
-
-        .gs-icon.lit {
-            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
-            box-shadow: 0 0 10px var(--gyo-green-glow);
-        }
-
-        .gs-text strong { font-size: .85rem; font-weight: 700; display: block; }
-        .gs-text small  { font-size: .72rem; color: var(--gyo-muted); }
-
-        .gs-arrow {
-            margin-left: auto;
-            width: 26px; height: 26px;
-            background: var(--gyo-green); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: .8rem; flex-shrink: 0;
-        }
-
-        /* ── Section head ── */
-        .section-head {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 20px 6px;
-        }
-
-        .section-head h3 { font-size: .95rem; font-weight: 700; color: var(--gyo-text); }
-        .section-head small { font-size: .75rem; color: var(--gyo-muted); }
-
-        /* ── Today task row ── */
-        .task-row {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 16px;
-            background: var(--gyo-card);
-            border-radius: 14px;
-            margin: 0 16px 10px;
-            border: 1px solid var(--gyo-border);
-        }
-
-        .task-icon {
-            width: 42px; height: 42px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; flex-shrink: 0;
-        }
-
-        .task-title { font-weight: 700; font-size: .875rem; }
-        .task-sub   { font-size: .72rem; color: var(--gyo-muted); }
-
-        .task-btn {
-            margin-left: auto;
-            background: var(--gyo-gold); color: #000;
-            font-size: .75rem; font-weight: 700;
-            padding: 6px 14px; border-radius: 20px;
-            border: none; white-space: nowrap; flex-shrink: 0;
-            text-decoration: none; cursor: pointer;
-        }
-
-        /* ── Bottom nav ── */
-        .bottom-nav {
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: var(--nav-h);
-            background: var(--gyo-surface);
-            border-top: 1px solid var(--gyo-border);
-            display: flex; align-items: flex-start;
-            justify-content: space-around;
-            padding-top: 8px;
+            font-size: 1rem;
             flex-shrink: 0;
-            z-index: 50;
         }
 
-        .nav-item {
+        .feature-item .fi-text {
+            font-size: .88rem;
+            color: var(--gyo-muted);
+            line-height: 1.4;
+        }
+
+        .feature-item .fi-text strong {
+            color: var(--gyo-text);
+            font-weight: 600;
+        }
+
+        .left-footer {
+            font-size: .75rem;
+            color: rgba(136,150,179,.4);
+            z-index: 1;
+        }
+
+        .plan-showcase {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+
+        .plan-mini {
+            background: var(--gyo-card);
+            border: 1px solid var(--gyo-border);
+            border-radius: 14px;
+            padding: 14px 12px;
+        }
+
+        .plan-mini .pm-name {
+            font-size: .72rem;
+            color: var(--gyo-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .plan-mini .pm-roi {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--gyo-green);
+        }
+
+        .plan-mini .pm-dur {
+            font-size: .68rem;
+            color: var(--gyo-muted);
+            margin-top: 2px;
+        }
+
+        /* ── Right panel — auth form ── */
+        .auth-right {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px 20px;
+            min-height: 100vh;
+            background: var(--gyo-navy);
+        }
+
+        @media (min-width: 900px) {
+            .auth-right {
+                width: 460px;
+                flex-shrink: 0;
+                padding: 40px 48px;
+                background: var(--gyo-surface);
+                border-left: 1px solid var(--gyo-border);
+            }
+        }
+
+        .auth-form-wrap {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* Mobile brand header */
+        .mobile-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+
+        @media (min-width: 900px) {
+            .mobile-brand { display: none; }
+        }
+
+        .mobile-brand .logo-mark {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .7rem; font-weight: 800; color: #fff;
+            line-height: 1.2; text-align: center;
+            box-shadow: 0 0 16px var(--gyo-green-glow);
+        }
+
+        .mobile-brand .brand-wordmark {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--gyo-text);
+        }
+
+        /* Form header */
+        .form-header {
+            margin-bottom: 28px;
+        }
+
+        .form-header h2 {
+            font-size: 1.7rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 6px;
+        }
+
+        .form-header p {
+            font-size: .88rem;
+            color: var(--gyo-muted);
+            line-height: 1.5;
+        }
+
+        /* Tab switcher */
+        .tab-switch {
+            display: flex;
+            background: var(--gyo-card);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 24px;
+            border: 1px solid var(--gyo-border);
+        }
+
+        .tab-btn {
             flex: 1;
-            display: flex; flex-direction: column;
-            align-items: center; gap: 3px;
+            padding: 9px 0;
+            border-radius: 8px;
+            font-size: .88rem;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
             text-decoration: none;
             color: var(--gyo-muted);
-            font-size: .65rem; font-weight: 600;
-            padding: 0 2px;
+            transition: color .15s, background .15s;
+            border: none;
+            background: transparent;
         }
 
-        .nav-item i { font-size: 1.3rem; line-height: 1; }
-
-        .nav-item.active { color: var(--gyo-green); }
-
-        .nav-badge {
-            position: absolute; top: -2px; right: 16%;
-            background: #EF4444; color: #fff;
-            font-size: .55rem; font-weight: 700;
-            min-width: 15px; height: 15px;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            padding: 0 3px;
+        .tab-btn.active {
+            background: var(--gyo-green);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(29,185,84,.3);
         }
 
-        /* ── Announcement modal ── */
-        .modal-backdrop {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,.75);
-            z-index: 200;
-            display: flex; align-items: flex-end; justify-content: center;
-            opacity: 0; pointer-events: none;
-            transition: opacity .25s;
+        /* Field group */
+        .field {
+            margin-bottom: 16px;
         }
 
-        .modal-backdrop.open { opacity: 1; pointer-events: all; }
+        .field label {
+            display: block;
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--gyo-muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 6px;
+        }
 
-        .modal-sheet {
-            background: var(--gyo-card);
-            width: 100%; max-width: 390px;
-            border-radius: 24px 24px 0 0;
-            padding: 20px 20px 36px;
-            transform: translateY(100%);
-            transition: transform .3s cubic-bezier(.4,0,.2,1);
+        .input-wrap {
             position: relative;
         }
 
-        .modal-backdrop.open .modal-sheet { transform: translateY(0); }
-
-        .modal-close {
-            position: absolute; top: 14px; right: 14px;
-            width: 28px; height: 28px;
-            background: var(--gyo-card2); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border: none;
-            color: var(--gyo-muted); font-size: .85rem;
+        .input-wrap .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gyo-muted);
+            font-size: 1rem;
+            pointer-events: none;
         }
 
-        .modal-icon {
-            width: 48px; height: 48px; border-radius: 14px;
-            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; margin-bottom: 10px;
+        .input-wrap .toggle-pw {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gyo-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 4px;
+            line-height: 1;
         }
 
-        .modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 10px; }
-
-        .ann-item {
-            display: flex; align-items: flex-start; gap: 10px;
-            padding: 6px 0; font-size: .83rem; line-height: 1.5; color: var(--gyo-muted);
+        .form-input {
+            width: 100%;
+            background: var(--gyo-card);
+            border: 1.5px solid var(--gyo-border);
+            border-radius: 12px;
+            padding: 12px 44px 12px 44px;
+            font-size: .95rem;
+            color: var(--gyo-text);
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+            -webkit-appearance: none;
         }
 
-        .ann-item .ann-emoji { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+        .form-input.no-icon {
+            padding-left: 14px;
+        }
 
-        .tg-open-btn {
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+        .form-input:focus {
+            border-color: var(--gyo-green);
+            box-shadow: 0 0 0 3px rgba(29,185,84,.12);
+        }
+
+        .form-input::placeholder {
+            color: rgba(136,150,179,.45);
+        }
+
+        .form-input.has-error {
+            border-color: var(--gyo-red);
+        }
+
+        /* Phone input — country prefix + number */
+        .phone-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .phone-row .phone-prefix {
+            flex-shrink: 0;
+            width: 88px;
+            background: var(--gyo-card2);
+            border: 1.5px solid var(--gyo-border);
+            border-radius: 12px;
+            padding: 12px 8px;
+            font-size: .95rem;
+            color: var(--gyo-text);
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            text-align: center;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .phone-row .phone-prefix:focus {
+            border-color: var(--gyo-green);
+            box-shadow: 0 0 0 3px rgba(29,185,84,.12);
+        }
+
+        .phone-row .phone-number {
+            flex: 1;
+        }
+
+        /* Error/success alerts */
+        .alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: .85rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background: rgba(239,68,68,.1);
+            border: 1px solid rgba(239,68,68,.25);
+            color: #FCA5A5;
+        }
+
+        .alert-success {
+            background: rgba(29,185,84,.1);
+            border: 1px solid rgba(29,185,84,.25);
+            color: #6ee7b7;
+        }
+
+        .alert i { font-size: .95rem; flex-shrink: 0; margin-top: 1px; }
+
+        /* Submit button */
+        .submit-btn {
             width: 100%;
             background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
-            color: #fff; border: none;
-            border-radius: 14px; padding: 14px;
-            font-size: .95rem; font-weight: 700;
-            margin-top: 18px; cursor: pointer;
-            text-decoration: none;
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
             box-shadow: 0 4px 20px rgba(29,185,84,.3);
+            transition: filter .15s, transform .1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
         }
 
-        /* ── Login CTA that appears below tasks (not modal) ── */
-        .login-cta {
-            margin: 0 16px 14px;
-            background: linear-gradient(135deg, rgba(29,185,84,.08), rgba(29,185,84,.04));
-            border: 1px solid rgba(29,185,84,.2);
-            border-radius: 16px;
-            padding: 16px;
+        .submit-btn:hover { filter: brightness(1.08); }
+        .submit-btn:active { transform: scale(.98); }
+        .submit-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--gyo-border);
+        }
+
+        .divider span {
+            font-size: .75rem;
+            color: var(--gyo-muted);
+            white-space: nowrap;
+        }
+
+        /* Telegram login option */
+        .tg-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            background: var(--gyo-card);
+            border: 1.5px solid var(--gyo-border);
+            border-radius: 14px;
+            padding: 12px;
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--gyo-text);
+            text-decoration: none;
+            transition: border-color .15s, background .15s;
+        }
+
+        .tg-btn:hover {
+            border-color: #28a8e8;
+            background: rgba(40,168,232,.06);
+        }
+
+        .tg-btn .tg-icon {
+            width: 26px; height: 26px;
+            background: #28a8e8;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff;
+            font-size: .9rem;
+        }
+
+        /* Helper text */
+        .helper-text {
+            font-size: .78rem;
+            color: var(--gyo-muted);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        /* Terms note */
+        .terms-note {
+            font-size: .72rem;
+            color: var(--gyo-muted);
             text-align: center;
+            margin-top: 16px;
+            line-height: 1.5;
         }
 
-        .login-cta p {
-            font-size: .82rem; color: var(--gyo-muted); margin-bottom: 12px; line-height: 1.5;
+        /* Sign-up bonus badge */
+        .bonus-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(245,158,11,.08);
+            border: 1px solid rgba(245,158,11,.2);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
         }
 
-        .login-cta-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
-            color: #fff; border: none; border-radius: 20px;
-            padding: 10px 22px; font-size: .88rem; font-weight: 700;
-            text-decoration: none; cursor: pointer;
-            box-shadow: 0 4px 14px rgba(29,185,84,.25);
+        .bonus-badge .bb-icon { font-size: 1.4rem; flex-shrink: 0; }
+
+        .bonus-badge .bb-text {
+            font-size: .83rem;
+            line-height: 1.4;
+        }
+
+        .bonus-badge .bb-text strong {
+            color: var(--gyo-gold);
+            font-weight: 700;
+        }
+
+        /* Password strength meter */
+        .pw-strength {
+            margin-top: 8px;
+        }
+
+        .pw-strength-bar {
+            height: 3px;
+            border-radius: 2px;
+            background: var(--gyo-border);
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .pw-strength-fill {
+            height: 100%;
+            border-radius: 2px;
+            width: 0;
+            transition: width .3s, background .3s;
+        }
+
+        .pw-strength-label {
+            font-size: .72rem;
+            color: var(--gyo-muted);
+        }
+
+        /* Optional ref code */
+        .ref-code-toggle {
+            font-size: .8rem;
+            color: var(--gyo-green);
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 10px;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Footer links */
+        .auth-footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: .82rem;
+            color: var(--gyo-muted);
+        }
+
+        .auth-footer a {
+            color: var(--gyo-green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* Spinner for loading state */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            flex-shrink: 0;
         }
     </style>
 </head>
 <body>
 
-<div class="phone-shell">
+<div class="auth-shell">
 
-    <!-- Top bar -->
-    <div class="top-bar">
-        <div>
-            <div class="greeting">Good morning</div>
-            <div class="brand-name">Welcome to Gyokuro</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
+    <!-- ═══════════════════════════════════════════
+         LEFT PANEL — branding / marketing
+    ═══════════════════════════════════════════ -->
+    <div class="auth-left">
+
+        <div class="left-brand">
             <div class="logo-mark">玉<br>露</div>
-            <div class="notif-btn"><i class="bi bi-bell"></i></div>
+            <div class="brand-wordmark">Gyokuro</div>
+        </div>
+
+        <div class="left-hero">
+            <div class="hero-tag">Premium Investment Platform</div>
+            <h1>Grow your wealth.<br><span class="accent">Sip the returns.</span></h1>
+            <p>Gyokuro is a premium investment platform where your money works around the clock. Choose a plan, sit back, and collect daily returns.</p>
+
+            <!-- Mini plan showcase -->
+            <div class="plan-showcase">
+                <div class="plan-mini">
+                    <div class="pm-name">Starter</div>
+                    <div class="pm-roi">2.0%</div>
+                    <div class="pm-dur">per day · 30d</div>
+                </div>
+                <div class="plan-mini">
+                    <div class="pm-name">Gold</div>
+                    <div class="pm-roi">3.0%</div>
+                    <div class="pm-dur">per day · 45d</div>
+                </div>
+                <div class="plan-mini">
+                    <div class="pm-name">Diamond</div>
+                    <div class="pm-roi">4.0%</div>
+                    <div class="pm-dur">per day · 90d</div>
+                </div>
+            </div>
+
+            <div class="feature-list">
+                <div class="feature-item">
+                    <div class="fi-icon">💰</div>
+                    <div class="fi-text"><strong>Daily returns</strong> — earnings credited every day during your plan.</div>
+                </div>
+                <div class="feature-item">
+                    <div class="fi-icon">🎁</div>
+                    <div class="fi-text"><strong>₱50 welcome bonus</strong> — credited instantly when you register.</div>
+                </div>
+                <div class="feature-item">
+                    <div class="fi-icon">👥</div>
+                    <div class="fi-text"><strong>Referral commissions</strong> — earn when your friends invest.</div>
+                </div>
+                <div class="feature-item">
+                    <div class="fi-icon">🔒</div>
+                    <div class="fi-text"><strong>Capital returned</strong> — principal paid back at plan completion.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="left-footer">
+            © 2026 Gyokuro · All rights reserved
         </div>
     </div>
 
-    <!-- Scrollable content -->
-    <div class="phone-content">
+    <!-- ═══════════════════════════════════════════
+         RIGHT PANEL — auth form
+    ═══════════════════════════════════════════ -->
+    <div class="auth-right">
+        <div class="auth-form-wrap">
 
-        <!-- Balance card (blurred — not logged in) -->
-        <div class="balance-card">
-            <div class="label">TOTAL BALANCE</div>
-            <div class="amount">₱●●●.●●</div>
-            <div class="sub">Sign in to see your balance</div>
-            <div class="btn-row">
-                <a href="#" class="btn-topup" onclick="openAnn();return false;">⬇ Top up</a>
-                <a href="#" class="btn-wd"    onclick="openAnn();return false;">↗ Withdraw</a>
-            </div>
-        </div>
-
-        <!-- Get started steps -->
-        <div class="card-block">
-            <div style="display:flex;align-items:center;margin-bottom:10px;">
-                <div class="cb-title">Get started</div>
-                <span class="cb-badge">0/3</span>
-                <span style="margin-left:auto;font-size:.72rem;color:var(--gyo-muted);">• Next: Top up</span>
+            <!-- Mobile brand -->
+            <div class="mobile-brand">
+                <div class="logo-mark">玉<br>露</div>
+                <div class="brand-wordmark">Gyokuro</div>
             </div>
 
-            <div class="gs-row">
-                <div class="gs-icon lit"><i class="bi bi-wallet2" style="color:#fff;"></i></div>
-                <div class="gs-text">
-                    <strong>Top up</strong>
-                    <small>Add money to your Gyokuro balance.</small>
+            <!-- Form header -->
+            <div class="form-header">
+                {% if mode == 'register' %}
+                <h2>Create account</h2>
+                <p>Get your ₱50 welcome bonus and start earning today.</p>
+                {% else %}
+                <h2>Welcome back</h2>
+                <p>Sign in to your Gyokuro account.</p>
+                {% endif %}
+            </div>
+
+            <!-- Tab switcher -->
+            <div class="tab-switch">
+                <a href="{{ url_for('portal.portal_login_page') }}"
+                   class="tab-btn {% if mode == 'login' %}active{% endif %}">
+                    Sign in
+                </a>
+                <a href="{{ url_for('portal.portal_register') }}{% if request.args.get('ref') %}?ref={{ request.args.get('ref') }}{% endif %}"
+                   class="tab-btn {% if mode == 'register' %}active{% endif %}">
+                    Create account
+                </a>
+            </div>
+
+            <!-- Error alert -->
+            {% if error %}
+            <div class="alert alert-error" role="alert">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for cat, msg in messages %}
+            <div class="alert {% if cat == 'success' %}alert-success{% else %}alert-error{% endif %}" role="alert">
+                <i class="bi {% if cat == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-circle-fill{% endif %}"></i>
+                <span>{{ msg }}</span>
+            </div>
+            {% endfor %}
+            {% endwith %}
+
+            <!-- ── REGISTER FORM ── -->
+            {% if mode == 'register' %}
+
+            <!-- Welcome bonus badge -->
+            <div class="bonus-badge">
+                <div class="bb-icon">🎁</div>
+                <div class="bb-text">
+                    Register now and receive a <strong>₱50 welcome bonus</strong> instantly — no deposit required.
                 </div>
-                <div class="gs-arrow"><i class="bi bi-arrow-right"></i></div>
             </div>
-            <div class="gs-row">
-                <div class="gs-icon"><i class="bi bi-bar-chart-line" style="color:var(--gyo-muted);"></i></div>
-                <div class="gs-text">
-                    <strong>Buy a plan</strong>
-                    <small>Pay once and get paid every day.</small>
+
+            <form method="POST" action="{{ url_for('portal.portal_register') }}" id="registerForm" novalidate>
+
+                <!-- Full name -->
+                <div class="field">
+                    <label for="full_name">Full Name</label>
+                    <div class="input-wrap">
+                        <i class="bi bi-person input-icon"></i>
+                        <input
+                            type="text"
+                            id="full_name"
+                            name="full_name"
+                            class="form-input"
+                            placeholder="Juan dela Cruz"
+                            value="{{ request.form.get('full_name', '') }}"
+                            autocomplete="name"
+                            maxlength="80"
+                        >
+                    </div>
                 </div>
-            </div>
-            <div class="gs-row">
-                <div class="gs-icon"><i class="bi bi-people" style="color:var(--gyo-muted);"></i></div>
-                <div class="gs-text">
-                    <strong>Invite a friend</strong>
-                    <small>Earn a commission when they buy a plan.</small>
+
+                <!-- Phone number -->
+                <div class="field">
+                    <label for="phone_number">Phone Number <span style="color:var(--gyo-red);">*</span></label>
+                    <div class="phone-row">
+                        <select name="phone_prefix" id="phone_prefix" class="phone-prefix" aria-label="Country code">
+                            <option value="+63" {% if not request.form.get('phone_prefix') or request.form.get('phone_prefix') == '+63' %}selected{% endif %}>🇵🇭 +63</option>
+                            <option value="+1"  {% if request.form.get('phone_prefix') == '+1' %}selected{% endif %}>🇺🇸 +1</option>
+                            <option value="+44" {% if request.form.get('phone_prefix') == '+44' %}selected{% endif %}>🇬🇧 +44</option>
+                            <option value="+61" {% if request.form.get('phone_prefix') == '+61' %}selected{% endif %}>🇦🇺 +61</option>
+                            <option value="+65" {% if request.form.get('phone_prefix') == '+65' %}selected{% endif %}>🇸🇬 +65</option>
+                            <option value="+971" {% if request.form.get('phone_prefix') == '+971' %}selected{% endif %}>🇦🇪 +971</option>
+                            <option value="+60" {% if request.form.get('phone_prefix') == '+60' %}selected{% endif %}>🇲🇾 +60</option>
+                            <option value="+81" {% if request.form.get('phone_prefix') == '+81' %}selected{% endif %}>🇯🇵 +81</option>
+                            <option value="+82" {% if request.form.get('phone_prefix') == '+82' %}selected{% endif %}>🇰🇷 +82</option>
+                            <option value="+86" {% if request.form.get('phone_prefix') == '+86' %}selected{% endif %}>🇨🇳 +86</option>
+                        </select>
+                        <div class="input-wrap phone-number">
+                            <i class="bi bi-telephone input-icon"></i>
+                            <input
+                                type="tel"
+                                id="phone_number"
+                                name="phone_number"
+                                class="form-input {% if error and 'phone' in (error|lower) %}has-error{% endif %}"
+                                placeholder="9171234567"
+                                value="{{ request.form.get('phone_number', '') }}"
+                                required
+                                autocomplete="tel-national"
+                                inputmode="tel"
+                                maxlength="15"
+                            >
+                        </div>
+                    </div>
+                    <p class="helper-text">Enter your number without the country code prefix.</p>
                 </div>
-            </div>
-        </div>
 
-        <!-- Today section -->
-        <div class="section-head">
-            <h3>Today</h3>
-            <small>
-                <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:conic-gradient(var(--gyo-green) 66%,var(--gyo-border) 0);vertical-align:middle;margin-right:4px;"></span>
-                2 of 3 done
-            </small>
-        </div>
+                <!-- Password -->
+                <div class="field">
+                    <label for="password">Password <span style="color:var(--gyo-red);">*</span></label>
+                    <div class="input-wrap">
+                        <i class="bi bi-lock input-icon"></i>
+                        <input
+                            type="password"
+                            id="reg_password"
+                            name="password"
+                            class="form-input"
+                            placeholder="At least 6 characters"
+                            required
+                            autocomplete="new-password"
+                            minlength="6"
+                            oninput="checkPwStrength(this.value)"
+                        >
+                        <button type="button" class="toggle-pw" onclick="togglePw('reg_password', this)" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div class="pw-strength" id="pwStrength">
+                        <div class="pw-strength-bar">
+                            <div class="pw-strength-fill" id="pwFill"></div>
+                        </div>
+                        <div class="pw-strength-label" id="pwLabel"></div>
+                    </div>
+                </div>
 
-        <div class="task-row">
-            <div class="task-icon" style="background:rgba(245,158,11,.15);">🗓️</div>
-            <div>
-                <div class="task-title">Daily check-in</div>
-                <div class="task-sub">Get ₱5–₱10 today</div>
-            </div>
-            <a href="{{ url_for('portal.portal_login_page') }}" class="task-btn">Check in</a>
-        </div>
+                <!-- Confirm password -->
+                <div class="field">
+                    <label for="confirm_password">Confirm Password <span style="color:var(--gyo-red);">*</span></label>
+                    <div class="input-wrap">
+                        <i class="bi bi-lock-fill input-icon"></i>
+                        <input
+                            type="password"
+                            id="confirm_password"
+                            name="confirm_password"
+                            class="form-input"
+                            placeholder="Repeat your password"
+                            required
+                            autocomplete="new-password"
+                        >
+                        <button type="button" class="toggle-pw" onclick="togglePw('confirm_password', this)" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
 
-        <div class="task-row">
-            <div class="task-icon" style="background:rgba(29,185,84,.1);">🌀</div>
-            <div>
-                <div class="task-title">Lucky Spin</div>
-                <div class="task-sub">Buy your first plan to get a spin</div>
-            </div>
-        </div>
+                <!-- Referral code (optional, collapsible) -->
+                <div id="refToggleWrap">
+                    <button type="button" class="ref-code-toggle" onclick="showRefField()" id="refToggleBtn">
+                        <i class="bi bi-plus-circle"></i> Have a referral code?
+                    </button>
+                </div>
+                <div class="field" id="refField" style="display:none;">
+                    <label for="ref_code">Referral Code <span style="color:var(--gyo-muted);font-weight:400;">(optional)</span></label>
+                    <div class="input-wrap">
+                        <i class="bi bi-gift input-icon"></i>
+                        <input
+                            type="text"
+                            id="ref_code"
+                            name="ref_code"
+                            class="form-input"
+                            placeholder="Enter code"
+                            value="{{ request.form.get('ref_code', '') or (request.args.get('ref', '')) }}"
+                            autocomplete="off"
+                            maxlength="20"
+                            style="text-transform:uppercase;"
+                        >
+                    </div>
+                </div>
 
-        <!-- Login CTA -->
-        <div class="login-cta">
-            <p>This is a preview. Sign in via Telegram to access your full dashboard, check your balance, and manage investments.</p>
-            <a href="https://t.me/{{ bot_username }}" class="login-cta-btn" target="_blank">
-                <i class="bi bi-telegram"></i> Open Gyokuro Bot
+                <input type="hidden" name="phone" id="phoneHidden">
+
+                <button type="submit" class="submit-btn" id="regSubmitBtn">
+                    <i class="bi bi-person-plus-fill"></i>
+                    Create my account
+                </button>
+
+                <p class="terms-note">
+                    By creating an account you agree to our terms of service and privacy policy.
+                </p>
+            </form>
+
+            <!-- ── LOGIN FORM ── -->
+            {% else %}
+
+            <form method="POST" action="{{ url_for('portal.portal_login_page') }}" id="loginForm" novalidate>
+
+                <!-- Phone number -->
+                <div class="field">
+                    <label for="phone">Phone Number <span style="color:var(--gyo-red);">*</span></label>
+                    <div class="input-wrap">
+                        <i class="bi bi-telephone input-icon"></i>
+                        <input
+                            type="tel"
+                            id="login_phone"
+                            name="phone"
+                            class="form-input {% if error %}has-error{% endif %}"
+                            placeholder="+63 917 123 4567"
+                            value="{{ request.form.get('phone', '') }}"
+                            required
+                            autocomplete="tel"
+                            inputmode="tel"
+                        >
+                    </div>
+                    <p class="helper-text">Include your country code, e.g. <code style="background:rgba(136,150,179,.15);padding:1px 5px;border-radius:4px;font-size:.78rem;">+63 9171234567</code></p>
+                </div>
+
+                <!-- Password -->
+                <div class="field">
+                    <label for="login_password">Password <span style="color:var(--gyo-red);">*</span></label>
+                    <div class="input-wrap">
+                        <i class="bi bi-lock input-icon"></i>
+                        <input
+                            type="password"
+                            id="login_password"
+                            name="password"
+                            class="form-input {% if error %}has-error{% endif %}"
+                            placeholder="Your password"
+                            required
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="toggle-pw" onclick="togglePw('login_password', this)" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="loginSubmitBtn">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Sign in
+                </button>
+            </form>
+
+            {% endif %}
+
+            <!-- Divider + Telegram alternative -->
+            <div class="divider"><span>or</span></div>
+
+            <a href="https://t.me/{{ bot_username }}" target="_blank" rel="noopener" class="tg-btn">
+                <div class="tg-icon"><i class="bi bi-telegram"></i></div>
+                Continue with Telegram Bot
             </a>
-            <div style="margin-top:10px;font-size:.72rem;color:var(--gyo-muted);">
-                Then send <code style="background:rgba(29,185,84,.12);color:var(--gyo-green);padding:1px 6px;border-radius:4px;">/weblogin</code> to get your login link
+
+            <!-- Switch mode footer -->
+            <div class="auth-footer">
+                {% if mode == 'register' %}
+                Already have an account?
+                <a href="{{ url_for('portal.portal_login_page') }}">Sign in</a>
+                {% else %}
+                Don't have an account?
+                <a href="{{ url_for('portal.portal_register') }}">Create one — it's free</a>
+                {% endif %}
             </div>
-        </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for cat, msg in messages %}
-        <div style="margin:0 16px 12px;padding:10px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:10px;font-size:.82rem;color:#FCA5A5;">
-            <i class="bi bi-exclamation-circle me-1"></i>{{ msg }}
-        </div>
-        {% endfor %}
-        {% endwith %}
+        </div><!-- /auth-form-wrap -->
+    </div><!-- /auth-right -->
 
-    </div><!-- /phone-content -->
-
-    <!-- Bottom nav -->
-    <div class="bottom-nav">
-        <a href="#" class="nav-item active">
-            <i class="bi bi-house-fill"></i>
-            <span>Home</span>
-        </a>
-        <a href="#" class="nav-item" onclick="openAnn();return false;">
-            <i class="bi bi-grid-fill"></i>
-            <span>Plans</span>
-        </a>
-        <a href="#" class="nav-item" style="position:relative;" onclick="openAnn();return false;">
-            <i class="bi bi-gift-fill"></i>
-            <span class="nav-badge">1</span>
-            <span>Rewards</span>
-        </a>
-        <a href="#" class="nav-item" onclick="openAnn();return false;">
-            <i class="bi bi-people-fill"></i>
-            <span>Invite</span>
-        </a>
-        <a href="#" class="nav-item" onclick="openAnn();return false;">
-            <i class="bi bi-person-circle"></i>
-            <span>Me</span>
-        </a>
-    </div>
-
-</div><!-- /phone-shell -->
-
-
-<!-- ── Announcement Modal ── -->
-<div class="modal-backdrop" id="annModal">
-    <div class="modal-sheet">
-        <button class="modal-close" onclick="closeAnn()"><i class="bi bi-x"></i></button>
-
-        <div class="modal-icon"><i class="bi bi-megaphone-fill" style="color:#fff;"></i></div>
-        <div class="modal-title">Announcement</div>
-
-        <div class="ann-item"><span class="ann-emoji">🎉</span><span>Welcome to Gyokuro!</span></div>
-        <div class="ann-item"><span class="ann-emoji">🚀</span><span>The Gyokuro investment platform is officially launched!</span></div>
-        <div class="ann-item"><span class="ann-emoji">🎁</span><span>Sign up now and receive a welcome bonus of ₱50!</span></div>
-        <div class="ann-item"><span class="ann-emoji">💰</span><span><strong style="color:var(--gyo-text);">Team Commissions:</strong><br>
-            Level 1 Commission: 35%<br>
-            Level 2 Commission: 2%<br>
-            Level 3 Commission: 1%
-        </span></div>
-        <div class="ann-item"><span class="ann-emoji">🔥</span><span>Referral rewards of up to ₱15,400!</span></div>
-        <div class="ann-item"><span class="ann-emoji">👉</span><span>To learn more about additional bonuses, benefits, and promotional offers, feel free to contact our team.</span></div>
-        <div class="ann-item"><span class="ann-emoji">🤝</span><span>Join Gyokuro now and enjoy our exclusive benefits!</span></div>
-
-        <a href="https://t.me/{{ bot_username }}" class="tg-open-btn" target="_blank">
-            <i class="bi bi-telegram"></i> Telegram group
-        </a>
-    </div>
-</div>
+</div><!-- /auth-shell -->
 
 <script>
-function openAnn() {
-    document.getElementById('annModal').classList.add('open');
+// ── Show/hide password ──────────────────────────────────────────────────────
+function togglePw(fieldId, btn) {
+    const inp = document.getElementById(fieldId);
+    if (!inp) return;
+    const isHidden = inp.type === 'password';
+    inp.type = isHidden ? 'text' : 'password';
+    const icon = btn.querySelector('i');
+    if (icon) {
+        icon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+    }
 }
-function closeAnn() {
-    document.getElementById('annModal').classList.remove('open');
+
+// ── Password strength meter ─────────────────────────────────────────────────
+function checkPwStrength(pw) {
+    const fill = document.getElementById('pwFill');
+    const label = document.getElementById('pwLabel');
+    if (!fill || !label) return;
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+    const levels = [
+        { w: '0%',   bg: 'transparent', lbl: '' },
+        { w: '25%',  bg: '#EF4444', lbl: 'Weak' },
+        { w: '50%',  bg: '#F59E0B', lbl: 'Fair' },
+        { w: '75%',  bg: '#3B82F6', lbl: 'Good' },
+        { w: '100%', bg: '#1DB954', lbl: 'Strong' },
+        { w: '100%', bg: '#1DB954', lbl: 'Strong' },
+    ];
+    const l = levels[Math.min(score, levels.length - 1)];
+    fill.style.width = l.w;
+    fill.style.background = l.bg;
+    label.textContent = l.lbl;
+    label.style.color = l.bg;
 }
-// Auto-show announcement on first visit
-if (!sessionStorage.getItem('gyo_ann')) {
-    setTimeout(openAnn, 600);
-    sessionStorage.setItem('gyo_ann', '1');
+
+// ── Referral code toggle ────────────────────────────────────────────────────
+function showRefField() {
+    document.getElementById('refField').style.display = 'block';
+    document.getElementById('refToggleWrap').style.display = 'none';
+    document.getElementById('ref_code').focus();
 }
-// Close on backdrop click
-document.getElementById('annModal').addEventListener('click', function(e) {
-    if (e.target === this) closeAnn();
-});
+
+// Auto-show ref field if a referral code is pre-filled
+(function () {
+    const refInput = document.getElementById('ref_code');
+    if (refInput && refInput.value.trim()) {
+        showRefField();
+    }
+})();
+
+// ── Build combined phone from prefix + number on register submit ────────────
+const regForm = document.getElementById('registerForm');
+if (regForm) {
+    regForm.addEventListener('submit', function (e) {
+        const prefix = document.getElementById('phone_prefix').value;
+        const number = document.getElementById('phone_number').value.trim().replace(/^0+/, '');
+        const combined = prefix + number;
+        document.getElementById('phoneHidden').value = combined;
+
+        // Client-side validation
+        const pw = document.getElementById('reg_password').value;
+        const confirm = document.getElementById('confirm_password').value;
+        if (pw.length < 6) {
+            e.preventDefault();
+            showInlineError('Password must be at least 6 characters.');
+            return;
+        }
+        if (pw !== confirm) {
+            e.preventDefault();
+            showInlineError('Passwords do not match.');
+            return;
+        }
+        if (!number) {
+            e.preventDefault();
+            showInlineError('Please enter your phone number.');
+            return;
+        }
+
+        // Show loading state
+        const btn = document.getElementById('regSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner"></div> Creating account…';
+    });
+}
+
+// ── Loading state for login ─────────────────────────────────────────────────
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', function () {
+        const btn = document.getElementById('loginSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner"></div> Signing in…';
+    });
+}
+
+// ── Inline error helper ─────────────────────────────────────────────────────
+function showInlineError(msg) {
+    // Remove existing
+    const existing = document.querySelector('.alert.alert-error.inline-err');
+    if (existing) existing.remove();
+
+    const el = document.createElement('div');
+    el.className = 'alert alert-error inline-err';
+    el.innerHTML = `<i class="bi bi-exclamation-circle-fill"></i><span>${msg}</span>`;
+
+    const form = document.getElementById('registerForm') || document.getElementById('loginForm');
+    if (form) {
+        const firstChild = form.firstElementChild;
+        form.insertBefore(el, firstChild);
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+// ── Uppercase ref code as user types ───────────────────────────────────────
+const refInput = document.getElementById('ref_code');
+if (refInput) {
+    refInput.addEventListener('input', function () {
+        const pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+    });
+}
 </script>
+
 </body>
 </html>

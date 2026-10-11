@@ -67,17 +67,119 @@ def get_portal_user():
 
 
 # ---------------------------------------------------------------------------
-# Login via one-time token (sent by bot)
+# Login — phone+password OR one-time token (sent by bot)
 # ---------------------------------------------------------------------------
 
-@portal.route("/login")
+@portal.route("/login", methods=["GET", "POST"])
 def portal_login_page():
-    """Show a landing page for users who haven't received their link yet."""
     if "portal_user_id" in session:
         return redirect(url_for("portal.home"))
+
     db = get_db()
     bot_username = db.get_setting("bot_username", "GyokuroBot")
-    return render_template("portal/login.html", bot_username=bot_username)
+    error = None
+
+    if request.method == "POST":
+        phone = request.form.get("phone", "").strip()
+        password = request.form.get("password", "")
+
+        if not phone or not password:
+            error = "Please enter your phone number and password."
+        else:
+            user = db.verify_phone_password(phone, password)
+            if not user:
+                error = "Incorrect phone number or password."
+                # Don't log failed attempts with user_id=0 (FK violation).
+                # Just continue — no session log for unknown users.
+            elif user.get("is_banned"):
+                error = "Your account has been suspended. Contact support."
+            else:
+                session.permanent = True
+                session["portal_user_id"] = user["user_id"]
+                session["portal_user_name"] = (
+                    user.get("full_name") or user.get("username") or phone
+                )
+                db.log_user_session(
+                    user_id=user["user_id"],
+                    action="phone_login",
+                    ip_address=request.remote_addr,
+                    platform="web",
+                    details=f"Phone login from {request.remote_addr}",
+                )
+                return redirect(url_for("portal.home"))
+
+    return render_template("portal/login.html",
+                           bot_username=bot_username,
+                           error=error,
+                           mode="login")
+
+
+@portal.route("/register", methods=["GET", "POST"])
+def portal_register():
+    if "portal_user_id" in session:
+        return redirect(url_for("portal.home"))
+
+    db = get_db()
+    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    error = None
+    success = None
+
+    if request.method == "POST":
+        # The form submits a hidden 'phone' field built by JS (prefix + number).
+        # Fall back to combining prefix + phone_number when JS is disabled.
+        phone = request.form.get("phone", "").strip()
+        if not phone:
+            prefix = request.form.get("phone_prefix", "+63").strip()
+            number = request.form.get("phone_number", "").strip().lstrip("0")
+            if number:
+                phone = prefix + number
+
+        full_name = request.form.get("full_name", "").strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+        ref_code = request.form.get("ref_code", "").strip()
+
+        if not phone or not password:
+            error = "Phone number and password are required."
+        elif len(password) < 6:
+            error = "Password must be at least 6 characters."
+        elif password != confirm:
+            error = "Passwords do not match."
+        else:
+            try:
+                user = db.register_phone_user(
+                    phone=phone,
+                    password=password,
+                    full_name=full_name,
+                    referral_code_used=ref_code or None,
+                )
+                # Grant signup bonus
+                signup_bonus = float(db.get_setting("signup_bonus_php", 50))
+                if signup_bonus > 0:
+                    db.grant_signup_bonus(user["user_id"], signup_bonus)
+
+                session.permanent = True
+                session["portal_user_id"] = user["user_id"]
+                session["portal_user_name"] = full_name or phone
+                db.log_user_session(
+                    user_id=user["user_id"],
+                    action="phone_register",
+                    ip_address=request.remote_addr,
+                    platform="web",
+                    details=f"New phone registration from {request.remote_addr}",
+                )
+                return redirect(url_for("portal.home"))
+            except ValueError as e:
+                if "phone_taken" in str(e):
+                    error = "This phone number is already registered. Please sign in."
+                else:
+                    error = "Registration failed. Please try again."
+
+    return render_template("portal/login.html",
+                           bot_username=bot_username,
+                           error=error,
+                           mode="register",
+                           ref_code=request.args.get("ref", ""))
 
 
 @portal.route("/auth")
@@ -119,6 +221,34 @@ def portal_logout():
     session.pop("portal_user_name", None)
     flash("You've been logged out.", "info")
     return redirect(url_for("portal.portal_login_page"))
+
+
+@portal.route("/change-password", methods=["POST"])
+@portal_login_required
+def change_password():
+    user = get_portal_user()
+    db = get_db()
+    current = request.form.get("current_password", "")
+    new_pw = request.form.get("new_password", "")
+    confirm = request.form.get("confirm_password", "")
+
+    if not user.get("password_hash"):
+        flash("No password set on this account yet.", "danger")
+    elif db.verify_phone_password(user["phone"] or "", current) is None:
+        # Also check via direct hash compare for safety
+        from database import Database as _DB
+        if user["password_hash"] != _DB._hash_password(current):
+            flash("Current password is incorrect.", "danger")
+            return redirect(url_for("portal.me"))
+    if new_pw and len(new_pw) < 6:
+        flash("New password must be at least 6 characters.", "danger")
+    elif new_pw and new_pw != confirm:
+        flash("New passwords do not match.", "danger")
+    elif new_pw:
+        db.update_user_password(user["user_id"], new_pw)
+        flash("Password updated successfully.", "success")
+
+    return redirect(url_for("portal.me"))
 
 
 # ---------------------------------------------------------------------------
@@ -368,3 +498,183 @@ def api_investments():
             "status": inv["status"],
         })
     return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# Deposit — web form (shows wallet addresses + lets user record a tx hash)
+# ---------------------------------------------------------------------------
+
+@portal.route("/deposit", methods=["GET", "POST"])
+@portal_login_required
+def deposit():
+    db = get_db()
+    user = get_portal_user()
+    bot_username = db.get_setting("bot_username", "GyokuroBot")
+
+    # Fetch wallet addresses and QR codes
+    crypto_wallets = {
+        "BTC": {
+            "address": db.get_setting("crypto_btc_address", ""),
+            "qr": db.get_setting("qr_btc", ""),
+            "label": "Bitcoin (BTC)",
+            "icon": "₿",
+        },
+        "ETH": {
+            "address": db.get_setting("crypto_eth_address", ""),
+            "qr": db.get_setting("qr_eth", ""),
+            "label": "Ethereum (ETH)",
+            "icon": "Ξ",
+        },
+        "USDT-TRC20": {
+            "address": db.get_setting("crypto_usdt_trc20_address", ""),
+            "qr": db.get_setting("qr_usdt_trc20", ""),
+            "label": "USDT (TRC-20 / Tron)",
+            "icon": "₮",
+        },
+        "USDT-ERC20": {
+            "address": db.get_setting("crypto_usdt_erc20_address", ""),
+            "qr": db.get_setting("qr_usdt_erc20", ""),
+            "label": "USDT (ERC-20 / Ethereum)",
+            "icon": "₮",
+        },
+        "LTC": {
+            "address": db.get_setting("crypto_ltc_address", ""),
+            "qr": db.get_setting("qr_ltc", ""),
+            "label": "Litecoin (LTC)",
+            "icon": "Ł",
+        },
+    }
+    # Only show wallets that have an address configured
+    active_wallets = {k: v for k, v in crypto_wallets.items() if v["address"]}
+
+    min_dep = float(db.get_setting("min_deposit_usd", 10.0))
+    usd_rate = float(db.get_setting("usd_to_php_rate", 56.0))
+    min_dep_php = round(min_dep * usd_rate, 2)
+
+    error = None
+    success = None
+
+    if request.method == "POST":
+        crypto = request.form.get("crypto_currency", "").strip().upper()
+        tx_hash = request.form.get("tx_hash", "").strip()
+        amount_php = request.form.get("amount_php", "").strip()
+        note = request.form.get("note", "").strip()
+
+        if not crypto or crypto not in active_wallets:
+            error = "Please select a valid payment method."
+        elif not amount_php:
+            error = "Please enter the amount you sent."
+        else:
+            try:
+                amount_val = float(amount_php)
+                if amount_val < min_dep_php:
+                    error = f"Minimum deposit is ₱{min_dep_php:,.2f}."
+                else:
+                    tx_id = db.create_transaction(
+                        user_id=user["user_id"],
+                        tx_type="deposit",
+                        amount=amount_val,
+                        currency="PHP",
+                        crypto_currency=crypto,
+                        wallet_address=active_wallets[crypto]["address"],
+                        tx_hash=tx_hash or None,
+                        note=note or f"Web deposit via {crypto}",
+                    )
+                    db.log_user_session(
+                        user_id=user["user_id"],
+                        action="deposit_submitted",
+                        ip_address=request.remote_addr,
+                        platform="web",
+                        details=f"Deposit ₱{amount_val:.2f} via {crypto}, tx_id={tx_id}",
+                    )
+                    success = (
+                        f"Deposit of ₱{amount_val:,.2f} submitted (#{tx_id}). "
+                        f"Our team will verify and credit your balance within 30 minutes."
+                    )
+            except (ValueError, TypeError):
+                error = "Please enter a valid amount."
+
+    return render_template(
+        "portal/deposit.html",
+        user=user,
+        bot_username=bot_username,
+        active_wallets=active_wallets,
+        min_dep=min_dep,
+        min_dep_php=min_dep_php,
+        error=error,
+        success=success,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Withdrawal request — web form
+# ---------------------------------------------------------------------------
+
+@portal.route("/withdraw", methods=["GET", "POST"])
+@portal_login_required
+def withdraw():
+    db = get_db()
+    user = get_portal_user()
+    bot_username = db.get_setting("bot_username", "GyokuroBot")
+
+    min_wd = float(db.get_setting("min_withdrawal_usd", 5.0))
+    usd_rate = float(db.get_setting("usd_to_php_rate", 56.0))
+    min_wd_php = round(min_wd * usd_rate, 2)
+    balance = float(user["balance"])
+
+    error = None
+    success = None
+
+    if request.method == "POST":
+        amount_str = request.form.get("amount", "").strip()
+        wallet_addr = request.form.get("wallet_address", "").strip()
+        crypto = request.form.get("crypto_currency", "").strip().upper()
+
+        if not amount_str or not wallet_addr or not crypto:
+            error = "All fields are required."
+        else:
+            try:
+                amount_val = float(amount_str)
+                if amount_val < min_wd_php:
+                    error = f"Minimum withdrawal is ₱{min_wd_php:,.2f}."
+                elif amount_val > balance:
+                    error = f"Insufficient balance. Your balance is ₱{balance:,.2f}."
+                else:
+                    # Deduct balance immediately and create pending tx
+                    updated = db.update_balance(user["user_id"], -amount_val)
+                    if updated is None:
+                        error = "Insufficient balance."
+                    else:
+                        tx_id = db.create_transaction(
+                            user_id=user["user_id"],
+                            tx_type="withdrawal",
+                            amount=-amount_val,
+                            currency="PHP",
+                            crypto_currency=crypto,
+                            wallet_address=wallet_addr,
+                            note=f"Web withdrawal request to {wallet_addr[:16]}…",
+                        )
+                        db.log_user_session(
+                            user_id=user["user_id"],
+                            action="withdrawal_submitted",
+                            ip_address=request.remote_addr,
+                            platform="web",
+                            details=f"Withdrawal ₱{amount_val:.2f} via {crypto}, tx_id={tx_id}",
+                        )
+                        success = (
+                            f"Withdrawal of ₱{amount_val:,.2f} submitted (#{tx_id}). "
+                            f"It will be processed within 24 hours."
+                        )
+            except (ValueError, TypeError):
+                error = "Please enter a valid amount."
+
+    return render_template(
+        "portal/withdraw.html",
+        user=user,
+        bot_username=bot_username,
+        min_wd=min_wd,
+        min_wd_php=min_wd_php,
+        balance=balance,
+        error=error,
+        success=success,
+    )

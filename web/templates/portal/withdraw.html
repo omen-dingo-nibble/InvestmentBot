@@ -1,0 +1,162 @@
+{% extends "portal/base.html" %}
+{% block title %}Withdraw — Gyokuro{% endblock %}
+
+{% block topbar %}
+<div class="top-bar">
+    <a href="{{ url_for('portal.home') }}" style="color:var(--gyo-muted);font-size:1.2rem;text-decoration:none;margin-right:8px;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div style="flex:1;">
+        <div style="font-size:1.15rem;font-weight:800;color:var(--gyo-text);">Withdraw</div>
+        <div style="font-size:.72rem;color:var(--gyo-muted);">Request a payout to your crypto wallet</div>
+    </div>
+    <div class="brand-logo">GY</div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% if success %}
+<!-- Success -->
+<div style="margin:24px 16px;">
+    <div style="background:rgba(29,185,84,.08);border:1px solid rgba(29,185,84,.2);border-radius:18px;padding:28px 20px;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:12px;">✅</div>
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:8px;">Withdrawal Requested!</div>
+        <div style="font-size:.88rem;color:var(--gyo-muted);line-height:1.6;margin-bottom:20px;">{{ success }}</div>
+        <a href="{{ url_for('portal.home') }}" style="display:inline-block;background:var(--gyo-green);color:#fff;font-weight:700;padding:12px 28px;border-radius:12px;text-decoration:none;">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+{% else %}
+
+{% if error %}
+<div style="margin:12px 16px 0;padding:12px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:12px;font-size:.85rem;color:#FCA5A5;display:flex;align-items:center;gap:8px;">
+    <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
+</div>
+{% endif %}
+
+<!-- Balance card -->
+<div style="margin:14px 16px 0;background:linear-gradient(135deg,#0d2d4a,#0f3d25);border-radius:18px;padding:20px;border:1px solid rgba(29,185,84,.25);">
+    <div style="font-size:.7rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;margin-bottom:4px;">Available Balance</div>
+    <div style="font-size:2.2rem;font-weight:800;color:#fff;line-height:1.1;">₱{{ "{:,.2f}".format(balance) }}</div>
+    <div style="font-size:.78rem;color:rgba(255,255,255,.45);margin-top:4px;">Minimum withdrawal: ₱{{ "{:,.2f}".format(min_wd_php) }}</div>
+
+    {% if balance < min_wd_php %}
+    <div style="margin-top:12px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px;font-size:.8rem;color:#FCA5A5;">
+        <i class="bi bi-lock-fill"></i>
+        Your balance is below the minimum withdrawal amount.
+        Invest more to earn and unlock withdrawals.
+    </div>
+    {% endif %}
+</div>
+
+<form method="POST" action="{{ url_for('portal.withdraw') }}" id="withdrawForm" novalidate
+      {% if balance < min_wd_php %}style="opacity:.65;pointer-events:none;"{% endif %}>
+
+    <div style="margin:14px 16px 0;">
+
+        <!-- Amount -->
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:.78rem;font-weight:600;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                Amount to Withdraw (₱) <span style="color:#EF4444;">*</span>
+            </label>
+            <div style="position:relative;">
+                <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#EF4444;font-weight:700;font-size:1rem;pointer-events:none;">₱</span>
+                <input type="number"
+                       name="amount"
+                       id="wd_amount"
+                       min="{{ min_wd_php }}"
+                       max="{{ balance }}"
+                       step="0.01"
+                       placeholder="{{ "{:,.0f}".format(min_wd_php) }}"
+                       value="{{ request.form.get('amount', '') }}"
+                       required
+                       style="width:100%;background:var(--gyo-card);border:1.5px solid var(--gyo-border);border-radius:12px;padding:12px 14px 12px 32px;font-size:.95rem;color:var(--gyo-text);font-family:'Inter',sans-serif;outline:none;"
+                       onfocus="this.style.borderColor='#EF4444'" onblur="this.style.borderColor='var(--gyo-border)'">
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--gyo-muted);margin-top:4px;">
+                <span>Min: ₱{{ "{:,.2f}".format(min_wd_php) }}</span>
+                <button type="button"
+                        onclick="document.getElementById('wd_amount').value='{{ '{:.2f}'.format(balance) }}';"
+                        style="background:none;border:none;color:var(--gyo-green);font-size:.72rem;font-weight:700;cursor:pointer;padding:0;font-family:'Inter',sans-serif;">
+                    Max (₱{{ "{:,.2f}".format(balance) }})
+                </button>
+            </div>
+        </div>
+
+        <!-- Crypto currency -->
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:.78rem;font-weight:600;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                Receive Via <span style="color:#EF4444;">*</span>
+            </label>
+            <select name="crypto_currency" required
+                    style="width:100%;background:var(--gyo-card);border:1.5px solid var(--gyo-border);border-radius:12px;padding:12px 14px;font-size:.92rem;color:var(--gyo-text);font-family:'Inter',sans-serif;outline:none;-webkit-appearance:none;">
+                <option value="">— Select cryptocurrency —</option>
+                <option value="BTC"       {% if request.form.get('crypto_currency') == 'BTC' %}selected{% endif %}>Bitcoin (BTC)</option>
+                <option value="ETH"       {% if request.form.get('crypto_currency') == 'ETH' %}selected{% endif %}>Ethereum (ETH)</option>
+                <option value="USDT-TRC20" {% if request.form.get('crypto_currency') == 'USDT-TRC20' %}selected{% endif %}>USDT (TRC-20 / Tron)</option>
+                <option value="USDT-ERC20" {% if request.form.get('crypto_currency') == 'USDT-ERC20' %}selected{% endif %}>USDT (ERC-20 / Ethereum)</option>
+                <option value="LTC"       {% if request.form.get('crypto_currency') == 'LTC' %}selected{% endif %}>Litecoin (LTC)</option>
+            </select>
+        </div>
+
+        <!-- Wallet address -->
+        <div style="margin-bottom:20px;">
+            <label style="display:block;font-size:.78rem;font-weight:600;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                Your Wallet Address <span style="color:#EF4444;">*</span>
+            </label>
+            <input type="text"
+                   name="wallet_address"
+                   placeholder="Paste your receiving wallet address"
+                   value="{{ request.form.get('wallet_address', '') }}"
+                   required
+                   style="width:100%;background:var(--gyo-card);border:1.5px solid var(--gyo-border);border-radius:12px;padding:12px 14px;font-size:.82rem;color:var(--gyo-text);font-family:monospace;outline:none;"
+                   onfocus="this.style.borderColor='#EF4444'" onblur="this.style.borderColor='var(--gyo-border)'">
+            <div style="font-size:.72rem;color:var(--gyo-muted);margin-top:4px;">
+                Double-check this address — transfers cannot be reversed.
+            </div>
+        </div>
+
+        <!-- Warning -->
+        <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:12px 14px;font-size:.8rem;color:#FCD34D;line-height:1.5;margin-bottom:16px;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Your funds will be deducted immediately. If there is a problem with your address, contact support before submitting.
+        </div>
+
+        <button type="submit" id="wdSubmitBtn"
+                {% if balance < min_wd_php %}disabled{% endif %}
+                style="width:100%;background:linear-gradient(135deg,#991B1B,#EF4444);color:#fff;border:none;border-radius:14px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(239,68,68,.25);display:flex;align-items:center;justify-content:center;gap:8px;">
+            <i class="bi bi-send-fill"></i>
+            {% if balance < min_wd_php %}
+                Balance too low
+            {% else %}
+                Request Withdrawal
+            {% endif %}
+        </button>
+
+        <div style="margin-top:12px;font-size:.75rem;color:var(--gyo-muted);text-align:center;line-height:1.5;">
+            Withdrawals are processed within 24 hours. Contact
+            <a href="https://t.me/{{ bot_username }}" target="_blank" style="color:var(--gyo-green);text-decoration:none;">support</a>
+            for urgent requests.
+        </div>
+    </div>
+</form>
+{% endif %}
+
+<div style="height:24px;"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('withdrawForm')?.addEventListener('submit', function () {
+    const btn = document.getElementById('wdSubmitBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span style="width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .6s linear infinite;"></span> Submitting…';
+    }
+});
+</script>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+{% endblock %}
