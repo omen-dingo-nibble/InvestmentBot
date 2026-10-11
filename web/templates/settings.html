@@ -1,56 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Settings & Wallets{% endblock %}
+{% block title %}設定{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-gear me-2 text-gold"></i>Settings & Wallet Configuration</h4>
-    <small class="text-muted">Manage bot tokens, crypto addresses, QR codes, and rates</small>
+    <h4><i class="bi bi-gear me-2 text-green"></i>設定 Settings</h4>
+    <small style="color:var(--gyo-muted);">Bot・ウォレット・レート設定</small>
 </div>
 
 <form method="POST" enctype="multipart/form-data">
 
-    <!-- ── Bot Configuration ── -->
+    <!-- Bot Config -->
     <div class="card mb-4">
-        <div class="card-header"><i class="bi bi-robot me-2"></i>Bot Configuration</div>
+        <div class="card-header"><i class="bi bi-robot me-2"></i>Bot 設定</div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-8">
-                    <label class="form-label">Bot Token <span class="text-danger">*</span></label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">Bot Token</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-key"></i></span>
                         <input type="password" name="bot_token" class="form-control"
-                               value="{{ settings.get('bot_token', '') }}"
-                               placeholder="123456:ABC-DEF…">
+                               value="{{ settings.get('bot_token', '') }}" placeholder="123456:ABC-DEF…">
                     </div>
-                    <small class="text-muted">Obtain from @BotFather on Telegram. Requires restart.</small>
+                    <small style="color:var(--gyo-muted);font-size:.75rem;">@BotFather から取得。変更後はbot再起動が必要。</small>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Bot Username</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">Bot Username</label>
                     <div class="input-group">
                         <span class="input-group-text">@</span>
                         <input type="text" name="bot_username" class="form-control"
-                               value="{{ settings.get('bot_username', '') }}" placeholder="HCCNWBot">
+                               value="{{ settings.get('bot_username', '') }}" placeholder="GyokuroBot">
                     </div>
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Admin Telegram IDs</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">Admin Telegram IDs</label>
                     <input type="text" name="admin_ids" class="form-control"
-                           value="{{ settings.get('admin_ids', '') }}"
-                           placeholder="123456789, 987654321">
-                    <small class="text-muted">Comma-separated Telegram user IDs. These users see the Admin Dashboard in the bot.</small>
+                           value="{{ settings.get('admin_ids', '') }}" placeholder="123456789, 987654321">
+                    <small style="color:var(--gyo-muted);font-size:.75rem;">カンマ区切りのTelegram IDリスト</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ── Crypto Wallet Addresses ── -->
+    <!-- Crypto Wallets -->
     <div class="card mb-4">
-        <div class="card-header"><i class="bi bi-currency-bitcoin me-2"></i>Crypto Wallet Addresses & QR Codes</div>
+        <div class="card-header"><i class="bi bi-currency-bitcoin me-2"></i>暗号通貨ウォレット & QRコード</div>
         <div class="card-body">
-            <p class="text-muted small mb-3">
+            <p style="color:var(--gyo-muted);font-size:.8rem;margin-bottom:1rem;">
                 <i class="bi bi-info-circle me-1"></i>
-                Upload a QR code image for each currency (PNG/JPG). It will be shown to users during the deposit flow.
-                Leave the upload blank to keep the existing QR.
+                各通貨のQRコード画像をアップロードしてください。入金フローでユーザーに表示されます。
             </p>
             <div class="row g-4">
                 {% set cryptos = [
@@ -62,27 +59,29 @@
                 ] %}
                 {% for key, symbol, label, icon, addr_field, qr_field in cryptos %}
                 <div class="col-md-6">
-                    <div class="card" style="background:#1a2030;">
+                    <div class="card" style="background:var(--gyo-surface);">
                         <div class="card-body">
-                            <h6 class="mb-3 text-gold"><i class="bi {{ icon }} me-2"></i>{{ label }} ({{ symbol }})</h6>
+                            <h6 class="mb-3 text-green" style="font-size:.875rem;">
+                                <i class="bi {{ icon }} me-2"></i>{{ label }}
+                            </h6>
                             <div class="mb-2">
-                                <label class="form-label small">Wallet Address</label>
+                                <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">ウォレットアドレス</label>
                                 <input type="text" name="{{ addr_field }}" class="form-control font-monospace"
-                                       value="{{ settings.get(addr_field, '') }}"
+                                       value="{{ settings.get(addr_field, '') }}" style="font-size:.8rem;"
                                        placeholder="{{ symbol }} address…">
                             </div>
                             <div>
-                                <label class="form-label small">Payment QR Code (PNG/JPG)</label>
+                                <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">QRコード画像</label>
                                 <input type="file" name="{{ qr_field }}" class="form-control"
                                        accept="image/png,image/jpeg,image/gif,image/webp">
                                 {% set qr_fn = settings.get(qr_field, '') %}
                                 {% if qr_fn %}
-                                <small class="text-muted">
-                                    Current: <code>{{ qr_fn }}</code>
-                                    <a href="/static/qr/{{ qr_fn }}" target="_blank" class="ms-1 text-gold">Preview</a>
+                                <small style="color:var(--gyo-muted);font-size:.72rem;">
+                                    現在: <code>{{ qr_fn }}</code>
+                                    <a href="/static/qr/{{ qr_fn }}" target="_blank" class="text-green ms-1">プレビュー</a>
                                 </small>
                                 {% else %}
-                                <small class="text-muted">No QR uploaded yet</small>
+                                <small style="color:var(--gyo-muted);font-size:.72rem;">QR未設定</small>
                                 {% endif %}
                             </div>
                         </div>
@@ -93,25 +92,13 @@
         </div>
     </div>
 
-    <!-- ── Currency & Exchange Rate ── -->
+    <!-- Operational Settings -->
     <div class="card mb-4">
-        <div class="card-header"><i class="bi bi-currency-exchange me-2"></i>Currency</div>
-        <div class="card-body">
-            <p class="text-muted small mb-0">
-                <i class="bi bi-info-circle me-1"></i>
-                This bot operates in <strong>Philippine Peso (₱ PHP)</strong> only.
-                All balances, deposits, withdrawals, and investment amounts are in PHP.
-            </p>
-        </div>
-    </div>
-
-    <!-- ── Operational Settings ── -->
-    <div class="card mb-4">
-        <div class="card-header"><i class="bi bi-sliders me-2"></i>Operational Settings</div>
+        <div class="card-header"><i class="bi bi-sliders me-2"></i>運営設定</div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label">Min Deposit (₱ PHP)</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">最低入金額 Min Deposit (₱)</label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
                         <input type="number" step="1" name="min_deposit_usd" class="form-control"
@@ -119,7 +106,7 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Min Withdrawal (₱ PHP)</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">最低出金額 Min Withdrawal (₱)</label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
                         <input type="number" step="1" name="min_withdrawal_usd" class="form-control"
@@ -127,49 +114,48 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Sign-up Bonus (₱ PHP)</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">登録ボーナス Signup Bonus (₱)</label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
                         <input type="number" step="1" min="0" name="signup_bonus_php" class="form-control"
                                value="{{ settings.get('signup_bonus_php', 50) }}">
                     </div>
-                    <small class="text-muted">Credited instantly to every new user. Set to 0 to disable.</small>
+                    <small style="color:var(--gyo-muted);font-size:.72rem;">0で無効化</small>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Referral Bonus (%)</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">紹介ボーナス Referral Bonus (%)</label>
                     <div class="input-group">
                         <input type="number" step="0.01" name="referral_bonus_percent" class="form-control"
                                value="{{ settings.get('referral_bonus_percent', 5) }}">
                         <span class="input-group-text">%</span>
                     </div>
-                <div class="col-md-6">
-                    <label class="form-label">Support Handle</label>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">サポートハンドル Support</label>
                     <div class="input-group">
                         <span class="input-group-text">@</span>
                         <input type="text" name="support_handle" class="form-control"
-                               value="{{ settings.get('support_handle', 'HCCNWAdmin') }}">
+                               value="{{ settings.get('support_handle', 'GyokuroSupport') }}">
                     </div>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <div class="form-check form-switch mb-2">
+                <div class="col-md-4 d-flex align-items-end pb-1 gap-3 flex-column justify-content-center">
+                    <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="deduct_referral_from_investor"
                                id="deduct_ref" {{ 'checked' if settings.get('deduct_referral_from_investor') else '' }}>
-                        <label class="form-check-label" for="deduct_ref">Deduct referral from investor</label>
+                        <label class="form-check-label" for="deduct_ref" style="font-size:.82rem;">投資家から紹介料を差引</label>
                     </div>
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <div class="form-check form-switch mb-2">
+                    <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="maintenance_mode"
                                id="maint" {{ 'checked' if settings.get('maintenance_mode') else '' }}>
-                        <label class="form-check-label text-warning" for="maint">
-                            <i class="bi bi-exclamation-triangle me-1"></i>Maintenance Mode
+                        <label class="form-check-label text-warning" for="maint" style="font-size:.82rem;">
+                            <i class="bi bi-exclamation-triangle me-1"></i>メンテナンスモード
                         </label>
                     </div>
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Welcome Message (shown in bot)</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">ウェルカムメッセージ Welcome Message</label>
                     <textarea name="welcome_message" class="form-control" rows="4"
-                              placeholder="Welcome message…">{{ settings.get('welcome_message', '') }}</textarea>
+                              placeholder="ウェルカムメッセージ…">{{ settings.get('welcome_message', '') }}</textarea>
                 </div>
             </div>
         </div>
@@ -177,9 +163,9 @@
 
     <div class="d-flex align-items-center gap-3">
         <button type="submit" class="btn btn-gold px-4">
-            <i class="bi bi-check-lg me-2"></i>Save All Settings
+            <i class="bi bi-check-lg me-2"></i>設定を保存 Save All
         </button>
-        <small class="text-muted">Token, wallet, and QR changes require a bot restart to take full effect.</small>
+        <small style="color:var(--gyo-muted);">Token・ウォレット変更後はbot再起動が必要です。</small>
     </div>
 
 </form>

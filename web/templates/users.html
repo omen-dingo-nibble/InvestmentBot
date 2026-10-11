@@ -1,22 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Members{% endblock %}
+{% block title %}ユーザー{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-people me-2 text-gold"></i>Members</h4>
-    <span class="text-muted">{{ total }} total</span>
+    <h4><i class="bi bi-people me-2 text-green"></i>ユーザー管理</h4>
+    <span style="color:var(--gyo-muted);font-size:.85rem;">{{ total }} 名</span>
 </div>
 
 <div class="card mb-3">
     <div class="card-body py-2">
         <form method="GET" class="d-flex gap-2">
-            <input type="text" name="q" class="form-control" placeholder="Search by name, username, or ID…"
+            <input type="text" name="q" class="form-control" placeholder="名前・ユーザー名・IDで検索…"
                    value="{{ search }}">
             <button type="submit" class="btn btn-gold px-3">
                 <i class="bi bi-search"></i>
             </button>
             {% if search %}
-            <a href="{{ url_for('main.users') }}" class="btn btn-outline-secondary">Clear</a>
+            <a href="{{ url_for('main.users') }}" class="btn btn-outline-secondary">クリア</a>
             {% endif %}
         </form>
     </div>
@@ -27,9 +27,9 @@
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>ID</th><th>Name</th><th>Username</th>
-                    <th>Balance</th><th>Deposited</th><th>Invested</th>
-                    <th>Status</th><th>Joined</th>
+                    <th>ID</th><th>氏名</th><th>Username</th>
+                    <th>残高</th><th>入金合計</th><th>投資合計</th>
+                    <th>状態</th><th>登録日</th>
                 </tr>
             </thead>
             <tbody>
@@ -38,38 +38,36 @@
                 style="cursor:pointer;">
                 <td><code>{{ u.user_id }}</code></td>
                 <td>{{ u.full_name or '—' }}</td>
-                <td>{{ ('@' + u.username) if u.username else '—' }}</td>
-                <td><strong>{{ u.balance | money }}</strong></td>
+                <td style="color:var(--gyo-muted);">{{ ('@' + u.username) if u.username else '—' }}</td>
+                <td><strong class="text-green">{{ u.balance | money }}</strong></td>
                 <td>{{ u.total_deposited | money }}</td>
                 <td>{{ u.total_invested | money }}</td>
                 <td>
                     {% if u.is_banned %}
-                    <span class="badge badge-rejected">Banned</span>
+                    <span class="badge badge-rejected">BAN</span>
                     {% elif u.is_admin %}
-                    <span class="badge" style="background:#7C3AED;">Admin</span>
+                    <span class="badge" style="background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);">Admin</span>
                     {% else %}
                     <span class="badge badge-active">Active</span>
                     {% endif %}
                 </td>
-                <td><small class="text-muted">{{ u.created_at | timeago }}</small></td>
+                <td><small style="color:var(--gyo-muted);">{{ u.created_at | timeago }}</small></td>
             </tr>
             {% else %}
-            <tr><td colspan="8" class="text-center text-muted py-4">No users found.</td></tr>
+            <tr><td colspan="8" class="text-center py-4" style="color:var(--gyo-muted);">ユーザーが見つかりません</td></tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
     {% if total_pages > 1 %}
     <div class="card-footer">
-        <nav>
-            <ul class="pagination pagination-sm mb-0">
-                {% for p in range(1, total_pages + 1) %}
-                <li class="page-item {{ 'active' if p == page else '' }}">
-                    <a class="page-link" href="{{ url_for('main.users', page=p, q=search) }}">{{ p }}</a>
-                </li>
-                {% endfor %}
-            </ul>
-        </nav>
+        <nav><ul class="pagination pagination-sm mb-0">
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {{ 'active' if p == page else '' }}">
+                <a class="page-link" href="{{ url_for('main.users', page=p, q=search) }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+        </ul></nav>
     </div>
     {% endif %}
 </div>

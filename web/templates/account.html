@@ -1,50 +1,49 @@
 {% extends "base.html" %}
-{% block title %}My Account{% endblock %}
+{% block title %}マイアカウント{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-person-circle me-2 text-gold"></i>My Account</h4>
+    <h4><i class="bi bi-person-circle me-2 text-green"></i>マイアカウント</h4>
 </div>
 
 <div class="row">
     <div class="col-md-5">
         <div class="card mb-4">
-            <div class="card-header"><i class="bi bi-person me-2"></i>Account Info</div>
+            <div class="card-header"><i class="bi bi-person me-2"></i>アカウント情報</div>
             <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-5 text-muted">Username</dt>
+                <dl class="row mb-0" style="font-size:.875rem;">
+                    <dt class="col-5" style="color:var(--gyo-muted);">Username</dt>
                     <dd class="col-7"><code>{{ admin.username }}</code></dd>
-                    <dt class="col-5 text-muted">Display Name</dt>
+                    <dt class="col-5" style="color:var(--gyo-muted);">Display Name</dt>
                     <dd class="col-7">{{ admin.display_name or '—' }}</dd>
-                    <dt class="col-5 text-muted">Role</dt>
+                    <dt class="col-5" style="color:var(--gyo-muted);">Role</dt>
                     <dd class="col-7">
-                        <span class="badge" style="background:#7C3AED;">{{ admin.role }}</span>
+                        <span class="badge" style="background:rgba(82,183,136,.2);color:var(--gyo-green);border:1px solid rgba(82,183,136,.3);">{{ admin.role }}</span>
                     </dd>
-                    <dt class="col-5 text-muted">Last Login</dt>
+                    <dt class="col-5" style="color:var(--gyo-muted);">Last Login</dt>
                     <dd class="col-7">{{ admin.last_login | timeago if admin.last_login else 'Never' }}</dd>
                 </dl>
             </div>
         </div>
 
         <div class="card">
-            <div class="card-header"><i class="bi bi-lock me-2"></i>Change Password</div>
+            <div class="card-header"><i class="bi bi-lock me-2"></i>パスワード変更</div>
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
-                        <label class="form-label">Current Password</label>
+                        <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">現在のパスワード Current Password</label>
                         <input type="password" name="current_password" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">New Password</label>
-                        <input type="password" name="new_password" class="form-control" required
-                               minlength="6" placeholder="At least 6 characters">
+                        <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">新パスワード New Password</label>
+                        <input type="password" name="new_password" class="form-control" required minlength="6">
                     </div>
                     <div class="mb-4">
-                        <label class="form-label">Confirm New Password</label>
+                        <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">確認 Confirm New Password</label>
                         <input type="password" name="confirm_password" class="form-control" required>
                     </div>
                     <button type="submit" class="btn btn-gold w-100">
-                        <i class="bi bi-check-lg me-2"></i>Update Password
+                        <i class="bi bi-check-lg me-2"></i>更新 Update Password
                     </button>
                 </form>
             </div>
@@ -53,40 +52,41 @@
 
     <div class="col-md-7">
         <div class="card">
-            <div class="card-header"><i class="bi bi-building me-2 text-gold"></i>High Caliber Construction NW</div>
+            <div class="card-header">
+                <span style="font-size:1.1rem;margin-right:8px;">🍵</span>
+                玉露 Gyokuro Investment Platform
+            </div>
             <div class="card-body">
-                <p class="text-muted mb-3">
-                    A family-owned and operated construction business built on quality
-                    craftsmanship, trust, and dedication.
+                <p style="color:var(--gyo-muted);font-size:.875rem;margin-bottom:1.25rem;">
+                    Gyokuro is a premium Japanese investment platform. Grow your wealth
+                    with our carefully crafted investment plans — like the finest shade-grown tea,
+                    your returns mature with time.
                 </p>
-                <hr style="border-color:#2D3748;">
-                <h6 class="text-gold mb-3">Our Crew</h6>
-                <div class="row g-3">
-                    {% set crew = [
-                        ('Chris Hollen', 'Owner & General Contractor', 'bi-person-badge'),
-                        ('Trevor Hollen', 'Foreman', 'bi-hammer'),
-                        ('Griffyn Rider', 'Crew Member', 'bi-tools'),
-                        ('Kyler Gessler', 'Crew Member', 'bi-tools'),
+
+                <div style="border:1px solid var(--gyo-border);border-radius:12px;overflow:hidden;">
+                    {% set features = [
+                        ('玉露 Starter', '₱99 entry plan — accessible for all investors', 'bi-leaf'),
+                        ('Daily Returns', 'Earnings credited every 24 hours automatically', 'bi-graph-up-arrow'),
+                        ('Referral System', 'Multi-level commission on your network\'s investments', 'bi-people'),
+                        ('Web Dashboard', 'Mobile-first user portal at /app', 'bi-phone'),
                     ] %}
-                    {% for name, title, icon in crew %}
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <div style="width:36px;height:36px;background:rgba(184,134,11,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                                <i class="bi {{ icon }} text-gold"></i>
-                            </div>
-                            <div>
-                                <div class="fw-semibold" style="font-size:.875rem;">{{ name }}</div>
-                                <div class="small text-muted">{{ title }}</div>
-                            </div>
+                    {% for title, desc, icon in features %}
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--gyo-border);">
+                        <div style="width:36px;height:36px;background:var(--gyo-glow);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="bi {{ icon }} text-green"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:.875rem;font-weight:600;">{{ title }}</div>
+                            <div style="font-size:.75rem;color:var(--gyo-muted);">{{ desc }}</div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
-                <hr style="border-color:#2D3748;">
-                <a href="https://www.highcalibernorthwest.com" target="_blank"
-                   class="btn btn-outline-gold btn-sm">
-                    <i class="bi bi-globe2 me-1"></i>Visit Website
-                </a>
+
+                <div style="margin-top:1.25rem;padding:12px 16px;background:var(--gyo-glow);border-radius:10px;border:1px solid rgba(82,183,136,.2);">
+                    <div style="font-size:.78rem;color:var(--gyo-muted);">User Portal</div>
+                    <div style="font-size:.9rem;font-weight:600;color:var(--gyo-light);">/app — Mobile investment dashboard</div>
+                </div>
             </div>
         </div>
     </div>

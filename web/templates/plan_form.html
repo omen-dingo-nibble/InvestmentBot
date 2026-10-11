@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Edit Plan' if plan else 'New Plan' }}{% endblock %}
+{% block title %}{{ 'プラン編集' if plan else '新プラン作成' }}{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-graph-up-arrow me-2 text-gold"></i>
-        {{ 'Edit Plan: ' + plan.name if plan else 'Create New Plan' }}
+    <h4><i class="bi bi-bar-chart-line me-2 text-green"></i>
+        {{ 'Edit: ' + plan.name if plan else '新プラン作成' }}
     </h4>
     <a href="{{ url_for('main.plans') }}" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Back
+        <i class="bi bi-arrow-left me-1"></i>戻る
     </a>
 </div>
 
@@ -16,26 +16,26 @@
         <form method="POST">
             <div class="row g-3">
                 <div class="col-md-8">
-                    <label class="form-label">Plan Name <span class="text-danger">*</span></label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">プラン名 Plan Name <span class="text-danger">*</span></label>
                     <input type="text" name="name" class="form-control" required maxlength="64"
                            value="{{ plan.name if plan else '' }}"
-                           placeholder="e.g. Foundation, Framing, Premium Build">
+                           placeholder="e.g. Gyokuro Gold">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Status</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">状態 Status</label>
                     <div class="form-check form-switch mt-2">
                         <input class="form-check-input" type="checkbox" name="is_active" id="is_active"
                                {{ 'checked' if (not plan or plan.is_active) else '' }}>
-                        <label class="form-check-label" for="is_active">Active</label>
+                        <label class="form-check-label" for="is_active" style="font-size:.875rem;">有効 Active</label>
                     </div>
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Description</label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">説明 Description</label>
                     <textarea name="description" class="form-control" rows="2"
-                              placeholder="Brief plan description shown to investors…">{{ plan.description if plan else '' }}</textarea>
+                              placeholder="プランの説明…">{{ plan.description if plan else '' }}</textarea>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Minimum Investment (₱ PHP) <span class="text-danger">*</span></label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">最低投資額 Min (₱) <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
                         <input type="number" step="1" min="1" name="min_amount" class="form-control" required
@@ -43,7 +43,7 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Maximum Investment (₱ PHP) <span class="text-danger">*</span></label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">最高投資額 Max (₱) <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
                         <input type="number" step="1" min="1" name="max_amount" class="form-control" required
@@ -51,7 +51,7 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Daily ROI (%) <span class="text-danger">*</span></label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">日利 Daily ROI (%) <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <input type="number" step="0.01" min="0" max="100" name="daily_roi" class="form-control" required
                                value="{{ plan.daily_roi_percent if plan else '' }}">
@@ -59,39 +59,39 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Duration (Days) <span class="text-danger">*</span></label>
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">期間 Duration (days) <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <input type="number" step="1" min="1" max="3650" name="duration" class="form-control" required
                                value="{{ plan.duration_days if plan else '' }}">
-                        <span class="input-group-text">days</span>
+                        <span class="input-group-text">日</span>
                     </div>
                 </div>
                 <div class="col-12">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="capital_return" id="cap_ret"
                                {{ 'checked' if (not plan or plan.capital_return) else '' }}>
-                        <label class="form-check-label" for="cap_ret">
-                            Return principal at end of term
+                        <label class="form-check-label" for="cap_ret" style="font-size:.875rem;">
+                            満期時に元本返還 Return principal at end of term
                         </label>
                     </div>
                 </div>
             </div>
 
-            <!-- Preview calculator -->
-            <div class="card mt-4" style="background:#1a2030;" id="preview-card">
+            <!-- Preview -->
+            <div class="card mt-4" style="background:var(--gyo-surface);" id="preview-card">
                 <div class="card-body">
-                    <h6 class="text-gold mb-3"><i class="bi bi-calculator me-2"></i>Return Preview</h6>
-                    <div id="preview-text" class="text-muted small">
-                        Fill in the fields above to see a return preview.
+                    <h6 class="text-green mb-3"><i class="bi bi-calculator me-2"></i>収益プレビュー Return Preview</h6>
+                    <div id="preview-text" style="color:var(--gyo-muted);font-size:.85rem;">
+                        数値を入力するとプレビューが表示されます
                     </div>
                 </div>
             </div>
 
             <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-gold px-4">
-                    <i class="bi bi-check-lg me-2"></i>{{ 'Save Changes' if plan else 'Create Plan' }}
+                    <i class="bi bi-check-lg me-2"></i>{{ '保存 Save' if plan else '作成 Create' }}
                 </button>
-                <a href="{{ url_for('main.plans') }}" class="btn btn-outline-secondary">Cancel</a>
+                <a href="{{ url_for('main.plans') }}" class="btn btn-outline-secondary">キャンセル</a>
             </div>
         </form>
     </div>
@@ -106,14 +106,16 @@ function updatePreview() {
     const minAmt = parseFloat(document.querySelector('[name=min_amount]').value) || 0;
     const capRet = document.querySelector('[name=capital_return]').checked;
     if (!roi || !dur || !minAmt) return;
-    const earnings = minAmt * (roi / 100) * dur;
+    const daily = minAmt * roi / 100;
+    const earnings = daily * dur;
     const total = earnings + (capRet ? minAmt : 0);
     const roiTotal = ((earnings / minAmt) * 100).toFixed(1);
+    const fmt = n => '₱' + n.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2});
     document.getElementById('preview-text').innerHTML =
-        `On a <strong>₱${minAmt.toLocaleString()}</strong> investment:<br>` +
-        `Daily earnings: <strong>₱${(minAmt * roi / 100).toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong><br>` +
-        `Total earnings over ${dur} days: <strong>₱${earnings.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong><br>` +
-        `Total payout: <strong>₱${total.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong> (${roiTotal}% total return)`;
+        `<strong style="color:var(--gyo-text);">₱${minAmt.toLocaleString()}</strong> 投資の場合:<br>` +
+        `毎日: <strong style="color:var(--gyo-green);">${fmt(daily)}</strong><br>` +
+        `${dur}日間の合計利益: <strong style="color:var(--gyo-green);">${fmt(earnings)}</strong><br>` +
+        `総受取額: <strong style="color:var(--gyo-light);">${fmt(total)}</strong> (${roiTotal}% total return)`;
 }
 document.querySelectorAll('[name=daily_roi],[name=duration],[name=min_amount],[name=capital_return]')
     .forEach(el => el.addEventListener('input', updatePreview));

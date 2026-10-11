@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Deposits{% endblock %}
+{% block title %}入金管理{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-wallet2 me-2 text-gold"></i>Deposits</h4>
-    <div class="d-flex gap-2">
+    <h4><i class="bi bi-arrow-down-circle me-2 text-green"></i>入金管理 Deposits</h4>
+    <div class="d-flex gap-2 flex-wrap">
         {% for s in ['pending', 'completed', 'rejected', 'all'] %}
         <a href="{{ url_for('main.deposits', status=s) }}"
            class="btn btn-sm {{ 'btn-gold' if status_filter == s else 'btn-outline-secondary' }}">
@@ -16,14 +16,14 @@
 
 <div class="card">
     <div class="card-header d-flex justify-content-between">
-        <span>{{ total }} deposit{{ 's' if total != 1 else '' }} — <em>{{ status_filter }}</em></span>
+        <span>{{ total }} 件 — <em style="color:var(--gyo-muted);">{{ status_filter }}</em></span>
     </div>
     <div class="table-responsive">
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>#</th><th>User</th><th>Amount</th><th>Crypto</th>
-                    <th>Network</th><th>TX Hash</th><th>Status</th><th>Date</th><th>Actions</th>
+                    <th>#</th><th>ユーザー</th><th>金額</th><th>Crypto</th>
+                    <th>Network</th><th>TX Hash</th><th>Status</th><th>日時</th><th>操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -31,67 +31,59 @@
             <tr>
                 <td><code>#{{ d.id }}</code></td>
                 <td>
-                    <a href="{{ url_for('main.user_detail', user_id=d.user_id) }}" class="text-decoration-none">
-                        {% if d._user %}
-                            {{ d._user.full_name or d._user.username or d.user_id }}
-                        {% else %}
-                            {{ d.user_id }}
-                        {% endif %}
+                    <a href="{{ url_for('main.user_detail', user_id=d.user_id) }}"
+                       style="color:var(--gyo-light);text-decoration:none;">
+                        {{ d._user.full_name or d._user.username or d.user_id if d._user else d.user_id }}
                     </a>
                 </td>
+                <td><strong class="text-green">{{ d.amount | money }}</strong></td>
+                <td><small>{{ d.crypto_currency or d.currency or '—' }}</small></td>
+                <td><small>{{ d.network or '—' }}</small></td>
                 <td>
-                    <strong>{{ d.amount | money }}</strong>
-                </td>
-                <td>{{ d.crypto_currency or d.currency or '—' }}</td>
-                <td>{{ d.network or '—' }}</td>
-                <td>
-                    {% if d.tx_hash %}
-                    <code class="small">{{ d.tx_hash[:16] }}…</code>
-                    {% else %}—{% endif %}
+                    {% if d.tx_hash %}<code class="small">{{ d.tx_hash[:14] }}…</code>
+                    {% else %}<span style="color:var(--gyo-muted);">—</span>{% endif %}
                 </td>
                 <td>
                     <span class="badge badge-{{ d.status }}">{{ d.status }}</span>
                     {% if d.receipt_file_id %}
-                    <span class="badge bg-secondary ms-1" title="Receipt attached">
+                    <span class="badge ms-1" style="background:rgba(82,183,136,.15);color:var(--gyo-green);">
                         <i class="bi bi-image"></i>
                     </span>
                     {% endif %}
                 </td>
-                <td><small class="text-muted">{{ d.created_at | ts_to_date }}</small></td>
+                <td><small style="color:var(--gyo-muted);">{{ d.created_at | ts_to_date }}</small></td>
                 <td>
                     {% if d.status == 'pending' %}
                     <form method="POST" action="{{ url_for('main.deposit_approve', tx_id=d.id) }}"
-                          class="d-inline" onsubmit="return confirm('Approve deposit #{{ d.id }}?')">
-                        <button class="btn btn-success btn-sm py-0">
-                            <i class="bi bi-check-lg"></i> Approve
+                          class="d-inline" onsubmit="return confirm('Approve #{{ d.id }}?')">
+                        <button class="btn btn-sm py-0 me-1" style="background:rgba(82,183,136,.15);color:var(--gyo-green);border:1px solid rgba(82,183,136,.3);">
+                            <i class="bi bi-check-lg"></i>
                         </button>
                     </form>
                     <form method="POST" action="{{ url_for('main.deposit_reject', tx_id=d.id) }}"
-                          class="d-inline" onsubmit="return confirm('Reject deposit #{{ d.id }}?')">
-                        <button class="btn btn-danger btn-sm py-0">
-                            <i class="bi bi-x-lg"></i> Reject
+                          class="d-inline" onsubmit="return confirm('Reject #{{ d.id }}?')">
+                        <button class="btn btn-sm py-0" style="background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.25);">
+                            <i class="bi bi-x-lg"></i>
                         </button>
                     </form>
                     {% endif %}
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="9" class="text-center text-muted py-4">No deposits found.</td></tr>
+            <tr><td colspan="9" class="text-center py-4" style="color:var(--gyo-muted);">データなし</td></tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
     {% if total_pages > 1 %}
     <div class="card-footer">
-        <nav>
-            <ul class="pagination pagination-sm mb-0">
-                {% for p in range(1, total_pages + 1) %}
-                <li class="page-item {{ 'active' if p == page else '' }}">
-                    <a class="page-link" href="{{ url_for('main.deposits', page=p, status=status_filter) }}">{{ p }}</a>
-                </li>
-                {% endfor %}
-            </ul>
-        </nav>
+        <nav><ul class="pagination pagination-sm mb-0">
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {{ 'active' if p == page else '' }}">
+                <a class="page-link" href="{{ url_for('main.deposits', page=p, status=status_filter) }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+        </ul></nav>
     </div>
     {% endif %}
 </div>
