@@ -756,6 +756,7 @@
             </div>
 
             <form method="POST" action="{{ url_for('portal.portal_register') }}" id="registerForm" novalidate>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
                 <!-- Full name -->
                 <div class="field">
@@ -898,6 +899,7 @@
             {% else %}
 
             <form method="POST" action="{{ url_for('portal.portal_login_page') }}" id="loginForm" novalidate>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
                 <!-- Phone number -->
                 <div class="field">

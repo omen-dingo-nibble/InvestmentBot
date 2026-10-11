@@ -1158,6 +1158,19 @@ if (announcementModal) {
         if (e.target === announcementModal) announcementModal.classList.remove('open');
     });
 }
+// Auto-inject CSRF token into every form
+(function() {
+    const csrfToken = {{ csrf_token()|tojson }};
+    document.querySelectorAll('form').forEach(function(form) {
+        if (!form.querySelector('[name="_csrf_token"]')) {
+            const inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = '_csrf_token';
+            inp.value = csrfToken;
+            form.appendChild(inp);
+        }
+    });
+})();
 </script>
 {% block extra_scripts %}{% endblock %}
 </body>

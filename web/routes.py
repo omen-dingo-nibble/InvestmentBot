@@ -19,6 +19,7 @@ from flask import (
     url_for,
     jsonify,
     send_from_directory,
+    abort,
 )
 
 from database import get_db
@@ -27,6 +28,9 @@ from web.app import (
     hash_password,
     login_required,
     verify_password,
+    csrf_protect,
+    limiter,
+    _sanitize,
 )
 
 log = logging.getLogger(__name__)
@@ -58,36 +62,47 @@ def _save_qr(file_field_name: str) -> str | None:
 
 
 @bp.route("/admin/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute; 30 per hour", error_message="Too many login attempts. Try again later.")
 def login():
     if "admin_id" in session:
         return redirect(url_for("main.dashboard"))
     error = None
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        # CSRF validation for login POST (protects against login CSRF)
+        from web.app import _validate_csrf
+        if not _validate_csrf():
+            log.warning("CSRF check failed on admin login from %s", request.remote_addr)
+            abort(403, "CSRF validation failed.")
+        username = _sanitize(request.form.get("username", ""), max_len=80)
         password = request.form.get("password", "")
-        db = get_db()
-        admin = db.get_web_admin(username)
-        if admin and verify_password(password, admin["password"]):
-            session.permanent = True
-            session["admin_id"] = admin["id"]
-            session["admin_name"] = admin["display_name"] or admin["username"]
-            db.update_web_admin_login(admin["id"])
+        if not username or not password:
+            error = "Username and password are required."
+        elif len(password) > 200:
+            error = "Invalid credentials."
+        else:
+            db = get_db()
+            admin = db.get_web_admin(username)
+            if admin and verify_password(password, admin["password"]):
+                session.permanent = True
+                session["admin_id"] = admin["id"]
+                session["admin_name"] = admin["display_name"] or admin["username"]
+                db.update_web_admin_login(admin["id"])
+                db.log_audit(
+                    action="login",
+                    admin_id=admin["id"],
+                    admin_name=admin["username"],
+                    ip_address=request.remote_addr,
+                    details=f"Web panel login from {request.remote_addr}",
+                )
+                flash("Welcome back!", "success")
+                return redirect(url_for("main.dashboard"))
+            error = "Invalid username or password."
             db.log_audit(
-                action="login",
-                admin_id=admin["id"],
-                admin_name=admin["username"],
+                action="login_failed",
+                admin_name=username,
                 ip_address=request.remote_addr,
-                details=f"Web panel login from {request.remote_addr}",
+                details=f"Failed login attempt for '{username}' from {request.remote_addr}",
             )
-            flash("Welcome back!", "success")
-            return redirect(url_for("main.dashboard"))
-        error = "Invalid username or password"
-        db.log_audit(
-            action="login_failed",
-            admin_name=username,
-            ip_address=request.remote_addr,
-            details=f"Failed login attempt for '{username}'",
-        )
     return render_template("login.html", error=error)
 
 
@@ -196,6 +211,7 @@ def user_detail(user_id: int):
 
 @bp.route("/users/<sint:user_id>/ban", methods=["POST"])
 @login_required
+@csrf_protect
 def user_ban(user_id: int):
     db = get_db()
     user = db.get_user(user_id)
@@ -219,6 +235,7 @@ def user_ban(user_id: int):
 
 @bp.route("/users/<sint:user_id>/adjust", methods=["POST"])
 @login_required
+@csrf_protect
 def user_adjust_balance(user_id: int):
     db = get_db()
     user = db.get_user(user_id)
@@ -262,6 +279,7 @@ def user_adjust_balance(user_id: int):
 
 @bp.route("/users/<sint:user_id>/edit", methods=["GET", "POST"])
 @login_required
+@csrf_protect
 def user_edit(user_id: int):
     db = get_db()
     user = db.get_user(user_id)
@@ -379,6 +397,7 @@ def user_edit(user_id: int):
 
 @bp.route("/users/<sint:user_id>/reset-password", methods=["POST"])
 @login_required
+@csrf_protect
 def user_reset_password(user_id: int):
     db = get_db()
     user = db.get_user(user_id)
@@ -409,6 +428,7 @@ def user_reset_password(user_id: int):
 
 @bp.route("/users/<sint:user_id>/transactions/<int:tx_id>/edit", methods=["POST"])
 @login_required
+@csrf_protect
 def transaction_edit(user_id: int, tx_id: int):
     db = get_db()
     tx = db.get_transaction(tx_id)
@@ -470,6 +490,7 @@ def transaction_edit(user_id: int, tx_id: int):
 
 @bp.route("/users/<sint:user_id>/transactions/<int:tx_id>/delete", methods=["POST"])
 @login_required
+@csrf_protect
 def transaction_delete(user_id: int, tx_id: int):
     db = get_db()
     tx = db.get_transaction(tx_id)
@@ -496,6 +517,7 @@ def transaction_delete(user_id: int, tx_id: int):
 
 @bp.route("/users/<sint:user_id>/transactions/create", methods=["POST"])
 @login_required
+@csrf_protect
 def transaction_create(user_id: int):
     db = get_db()
     user = db.get_user(user_id)
@@ -546,6 +568,7 @@ def transaction_create(user_id: int):
 
 @bp.route("/users/<sint:user_id>/investments/<int:inv_id>/edit", methods=["POST"])
 @login_required
+@csrf_protect
 def investment_edit(user_id: int, inv_id: int):
     db = get_db()
     inv = db.get_investment(inv_id)
@@ -617,6 +640,7 @@ def investment_edit(user_id: int, inv_id: int):
 
 @bp.route("/users/<sint:user_id>/investments/<int:inv_id>/delete", methods=["POST"])
 @login_required
+@csrf_protect
 def investment_delete(user_id: int, inv_id: int):
     db = get_db()
     inv = db.get_investment(inv_id)
@@ -643,6 +667,7 @@ def investment_delete(user_id: int, inv_id: int):
 
 @bp.route("/users/<sint:user_id>/investments/create", methods=["POST"])
 @login_required
+@csrf_protect
 def investment_create(user_id: int):
     db = get_db()
     user = db.get_user(user_id)
@@ -748,12 +773,25 @@ def deposits():
 
 @bp.route("/deposits/<int:tx_id>/approve", methods=["POST"])
 @login_required
+@csrf_protect
 def deposit_approve(tx_id: int):
     db = get_db()
-    tx = db.get_transaction(tx_id)
-    if not tx or tx["tx_type"] != "deposit" or tx["status"] != "pending":
-        flash("Invalid transaction.", "danger")
-        return redirect(url_for("main.deposits"))
+    # Re-check status inside a DB lock to prevent double-approval race
+    with db._lock:
+        tx = db.get_transaction(tx_id)
+        if not tx or tx["tx_type"] != "deposit" or tx["status"] != "pending":
+            flash("Invalid transaction or already processed.", "danger")
+            return redirect(url_for("main.deposits"))
+        # Immediately mark as processing to claim the row
+        db.execute(
+            "UPDATE transactions SET status = 'processing', updated_at = ? WHERE id = ? AND status = 'pending'",
+            (int(time.time()), tx_id),
+        )
+        affected = db.query_one("SELECT changes() AS c")
+        if not affected or affected["c"] == 0:
+            flash("Transaction was already processed by another admin.", "warning")
+            return redirect(url_for("main.deposits"))
+
     db.update_balance(tx["user_id"], float(tx["amount"]))
     db.execute(
         "UPDATE users SET total_deposited = total_deposited + ?, updated_at = ? WHERE user_id = ?",
@@ -775,6 +813,7 @@ def deposit_approve(tx_id: int):
 
 @bp.route("/deposits/<int:tx_id>/reject", methods=["POST"])
 @login_required
+@csrf_protect
 def deposit_reject(tx_id: int):
     db = get_db()
     tx = db.get_transaction(tx_id)
@@ -829,12 +868,24 @@ def withdrawals():
 
 @bp.route("/withdrawals/<int:tx_id>/approve", methods=["POST"])
 @login_required
+@csrf_protect
 def withdrawal_approve(tx_id: int):
     db = get_db()
-    tx = db.get_transaction(tx_id)
-    if not tx or tx["tx_type"] != "withdrawal" or tx["status"] != "pending":
-        flash("Invalid transaction.", "danger")
-        return redirect(url_for("main.withdrawals"))
+    # Atomic claim to prevent double-approval
+    with db._lock:
+        tx = db.get_transaction(tx_id)
+        if not tx or tx["tx_type"] != "withdrawal" or tx["status"] != "pending":
+            flash("Invalid transaction or already processed.", "danger")
+            return redirect(url_for("main.withdrawals"))
+        db.execute(
+            "UPDATE transactions SET status = 'processing', updated_at = ? WHERE id = ? AND status = 'pending'",
+            (int(time.time()), tx_id),
+        )
+        affected = db.query_one("SELECT changes() AS c")
+        if not affected or affected["c"] == 0:
+            flash("Transaction was already processed by another admin.", "warning")
+            return redirect(url_for("main.withdrawals"))
+
     db.execute(
         "UPDATE users SET total_withdrawn = total_withdrawn + ?, updated_at = ? WHERE user_id = ?",
         (abs(float(tx["amount"])), int(time.time()), tx["user_id"]),
@@ -855,13 +906,25 @@ def withdrawal_approve(tx_id: int):
 
 @bp.route("/withdrawals/<int:tx_id>/reject", methods=["POST"])
 @login_required
+@csrf_protect
 def withdrawal_reject(tx_id: int):
     db = get_db()
-    tx = db.get_transaction(tx_id)
-    if not tx or tx["tx_type"] != "withdrawal" or tx["status"] != "pending":
-        flash("Invalid transaction.", "danger")
-        return redirect(url_for("main.withdrawals"))
-    # Refund locked funds
+    # Atomic status-check + claim to prevent double-refund
+    with db._lock:
+        tx = db.get_transaction(tx_id)
+        if not tx or tx["tx_type"] != "withdrawal" or tx["status"] != "pending":
+            flash("Invalid transaction or already processed.", "danger")
+            return redirect(url_for("main.withdrawals"))
+        db.execute(
+            "UPDATE transactions SET status = 'processing', updated_at = ? WHERE id = ? AND status = 'pending'",
+            (int(time.time()), tx_id),
+        )
+        affected = db.query_one("SELECT changes() AS c")
+        if not affected or affected["c"] == 0:
+            flash("Transaction was already processed by another admin.", "warning")
+            return redirect(url_for("main.withdrawals"))
+
+    # Refund locked funds (safe — only reached once per tx)
     db.update_balance(tx["user_id"], abs(float(tx["amount"])))
     db.update_transaction(tx_id, "rejected", admin_id=session.get("admin_id"), note="Rejected via web panel, funds returned")
     db.log_audit(
@@ -892,17 +955,34 @@ def plans():
 
 @bp.route("/plans/create", methods=["GET", "POST"])
 @login_required
+@csrf_protect
 def plan_create():
     if request.method == "POST":
         db = get_db()
         try:
+            name = _sanitize(request.form.get("name", ""), max_len=120)
+            if not name:
+                flash("Plan name is required.", "danger")
+                return render_template("plan_form.html", plan=None, admin=get_current_admin())
+            description = _sanitize(request.form.get("description", ""), max_len=500)
+            min_amount = float(request.form["min_amount"])
+            max_amount = float(request.form["max_amount"])
+            daily_roi = float(request.form["daily_roi"])
+            duration = int(request.form["duration"])
+            # Sane range guards
+            if min_amount < 0 or max_amount < min_amount:
+                raise ValueError("min_amount / max_amount out of range")
+            if not (0 < daily_roi <= 100):
+                raise ValueError("daily_roi_percent must be between 0 and 100")
+            if not (1 <= duration <= 3650):
+                raise ValueError("duration_days must be between 1 and 3650")
             pid = db.create_plan(
-                name=request.form["name"].strip(),
-                description=request.form.get("description", "").strip(),
-                min_amount=float(request.form["min_amount"]),
-                max_amount=float(request.form["max_amount"]),
-                daily_roi_percent=float(request.form["daily_roi"]),
-                duration_days=int(request.form["duration"]),
+                name=name,
+                description=description,
+                min_amount=min_amount,
+                max_amount=max_amount,
+                daily_roi_percent=daily_roi,
+                duration_days=duration,
                 capital_return=request.form.get("capital_return") == "on",
                 is_active=request.form.get("is_active") == "on",
             )
@@ -924,6 +1004,7 @@ def plan_create():
 
 @bp.route("/plans/<int:plan_id>/edit", methods=["GET", "POST"])
 @login_required
+@csrf_protect
 def plan_edit(plan_id: int):
     db = get_db()
     plan = db.get_plan(plan_id)
@@ -932,14 +1013,29 @@ def plan_edit(plan_id: int):
         return redirect(url_for("main.plans"))
     if request.method == "POST":
         try:
+            name = _sanitize(request.form.get("name", ""), max_len=120)
+            if not name:
+                flash("Plan name is required.", "danger")
+                return render_template("plan_form.html", plan=plan, admin=get_current_admin())
+            description = _sanitize(request.form.get("description", ""), max_len=500)
+            min_amount = float(request.form["min_amount"])
+            max_amount = float(request.form["max_amount"])
+            daily_roi = float(request.form["daily_roi"])
+            duration = int(request.form["duration"])
+            if min_amount < 0 or max_amount < min_amount:
+                raise ValueError("min_amount / max_amount out of range")
+            if not (0 < daily_roi <= 100):
+                raise ValueError("daily_roi_percent must be between 0 and 100")
+            if not (1 <= duration <= 3650):
+                raise ValueError("duration_days must be between 1 and 3650")
             db.update_plan(
                 plan_id,
-                name=request.form["name"].strip(),
-                description=request.form.get("description", "").strip(),
-                min_amount=float(request.form["min_amount"]),
-                max_amount=float(request.form["max_amount"]),
-                daily_roi_percent=float(request.form["daily_roi"]),
-                duration_days=int(request.form["duration"]),
+                name=name,
+                description=description,
+                min_amount=min_amount,
+                max_amount=max_amount,
+                daily_roi_percent=daily_roi,
+                duration_days=duration,
                 capital_return=1 if request.form.get("capital_return") == "on" else 0,
                 is_active=1 if request.form.get("is_active") == "on" else 0,
             )
@@ -961,6 +1057,7 @@ def plan_edit(plan_id: int):
 
 @bp.route("/plans/<int:plan_id>/toggle", methods=["POST"])
 @login_required
+@csrf_protect
 def plan_toggle(plan_id: int):
     db = get_db()
     plan = db.get_plan(plan_id)
@@ -984,6 +1081,7 @@ def plan_toggle(plan_id: int):
 
 @bp.route("/plans/<int:plan_id>/delete", methods=["POST"])
 @login_required
+@csrf_protect
 def plan_delete(plan_id: int):
     db = get_db()
     plan = db.get_plan(plan_id)
@@ -1014,6 +1112,7 @@ def plan_delete(plan_id: int):
 
 @bp.route("/settings", methods=["GET", "POST"])
 @login_required
+@csrf_protect
 def settings():
     db = get_db()
     if request.method == "POST":
@@ -1083,10 +1182,11 @@ def settings():
 
 @bp.route("/broadcast", methods=["GET", "POST"])
 @login_required
+@csrf_protect
 def broadcast():
     db = get_db()
     if request.method == "POST":
-        message = request.form.get("message", "").strip()
+        message = _sanitize(request.form.get("message", ""), max_len=4000)
         if not message:
             flash("Message cannot be empty.", "danger")
         else:
@@ -1140,6 +1240,7 @@ def audit_logs():
 
 @bp.route("/account", methods=["GET", "POST"])
 @login_required
+@csrf_protect
 def account():
     db = get_db()
     admin = get_current_admin()

@@ -25,6 +25,7 @@ from flask import (
 )
 
 from database import get_db, Database
+from web.app import csrf_protect, limiter, _sanitize
 
 log = logging.getLogger(__name__)
 portal = Blueprint("portal", __name__, url_prefix="/app")
@@ -55,6 +56,15 @@ def portal_login_required(f):
     def decorated(*args, **kwargs):
         if "portal_user_id" not in session:
             return redirect(url_for("portal.portal_login_page"))
+        # Maintenance mode — block portal actions but not the login page itself
+        db = get_db()
+        if db.get_setting("maintenance_mode", False):
+            return render_template(
+                "portal/login.html",
+                bot_username=db.get_setting("bot_username", "GyokuroBot"),
+                error="The platform is currently under maintenance. Please check back soon.",
+                mode="login",
+            ), 503
         return f(*args, **kwargs)
     return decorated
 
@@ -71,6 +81,7 @@ def get_portal_user():
 # ---------------------------------------------------------------------------
 
 @portal.route("/login", methods=["GET", "POST"])
+@limiter.limit("15 per minute; 60 per hour", error_message="Too many login attempts.")
 def portal_login_page():
     if "portal_user_id" in session:
         return redirect(url_for("portal.home"))
@@ -115,6 +126,7 @@ def portal_login_page():
 
 
 @portal.route("/register", methods=["GET", "POST"])
+@limiter.limit("5 per minute; 20 per hour", error_message="Too many registrations from this IP.")
 def portal_register():
     if "portal_user_id" in session:
         return redirect(url_for("portal.home"))
@@ -183,6 +195,7 @@ def portal_register():
 
 
 @portal.route("/auth")
+@limiter.limit("20 per minute", error_message="Too many token attempts.")
 def portal_auth():
     """Consume a one-time token and create a portal session."""
     token = request.args.get("token", "").strip()
@@ -225,6 +238,7 @@ def portal_logout():
 
 @portal.route("/change-password", methods=["POST"])
 @portal_login_required
+@csrf_protect
 def change_password():
     user = get_portal_user()
     db = get_db()
@@ -506,6 +520,7 @@ def api_investments():
 
 @portal.route("/deposit", methods=["GET", "POST"])
 @portal_login_required
+@csrf_protect
 def deposit():
     db = get_db()
     user = get_portal_user()
@@ -612,6 +627,7 @@ def deposit():
 
 @portal.route("/withdraw", methods=["GET", "POST"])
 @portal_login_required
+@csrf_protect
 def withdraw():
     db = get_db()
     user = get_portal_user()
@@ -620,30 +636,36 @@ def withdraw():
     min_wd = float(db.get_setting("min_withdrawal_usd", 5.0))
     usd_rate = float(db.get_setting("usd_to_php_rate", 56.0))
     min_wd_php = round(min_wd * usd_rate, 2)
-    balance = float(user["balance"])
+    # Re-fetch balance fresh from DB to avoid stale session data
+    fresh_user = db.get_user(user["user_id"])
+    balance = float(fresh_user["balance"]) if fresh_user else 0.0
 
     error = None
     success = None
 
     if request.method == "POST":
         amount_str = request.form.get("amount", "").strip()
-        wallet_addr = request.form.get("wallet_address", "").strip()
-        crypto = request.form.get("crypto_currency", "").strip().upper()
+        wallet_addr = _sanitize(request.form.get("wallet_address", ""), max_len=200)
+        crypto = _sanitize(request.form.get("crypto_currency", ""), max_len=20).upper()
 
         if not amount_str or not wallet_addr or not crypto:
             error = "All fields are required."
+        elif not wallet_addr or len(wallet_addr) < 10:
+            error = "Please enter a valid wallet address."
         else:
             try:
                 amount_val = float(amount_str)
-                if amount_val < min_wd_php:
+                if amount_val <= 0:
+                    error = "Amount must be positive."
+                elif amount_val < min_wd_php:
                     error = f"Minimum withdrawal is ₱{min_wd_php:,.2f}."
                 elif amount_val > balance:
                     error = f"Insufficient balance. Your balance is ₱{balance:,.2f}."
                 else:
-                    # Deduct balance immediately and create pending tx
+                    # Atomic deduct — update_balance returns None if it would go negative
                     updated = db.update_balance(user["user_id"], -amount_val)
                     if updated is None:
-                        error = "Insufficient balance."
+                        error = "Insufficient balance (concurrent request detected)."
                     else:
                         tx_id = db.create_transaction(
                             user_id=user["user_id"],
@@ -665,12 +687,15 @@ def withdraw():
                             f"Withdrawal of ₱{amount_val:,.2f} submitted (#{tx_id}). "
                             f"It will be processed within 24 hours."
                         )
+                        # Refresh balance for template
+                        fresh_user = db.get_user(user["user_id"])
+                        balance = float(fresh_user["balance"]) if fresh_user else 0.0
             except (ValueError, TypeError):
                 error = "Please enter a valid amount."
 
     return render_template(
         "portal/withdraw.html",
-        user=user,
+        user=fresh_user or user,
         bot_username=bot_username,
         min_wd=min_wd,
         min_wd_php=min_wd_php,
