@@ -91,6 +91,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     welcome = db.get_setting("welcome_message", f"Welcome to {BRAND_NAME}!")
     min_wd = float(db.get_setting("min_withdrawal_usd", CONFIG.min_withdrawal_usd))
 
+    # Build web dashboard URL (with a fresh one-time token)
+    web_host = os.environ.get("WEB_HOST_URL", "").strip()
+    web_url = ""
+    if web_host:
+        token = db.create_web_login_token(user.id, ttl_seconds=3600)
+        web_url = f"{web_host}/app/auth?token={token}"
+
     # ── New user — bonus announcement ───────────────────────────────
     if bonus_granted:
         await update.effective_message.reply_text(
@@ -101,10 +108,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             f"That's real money — and it starts growing the moment you put it to work.\n\n"
             f"💡 *Here's the thing:* you can't withdraw until you reach "
             f"*{fmt_money(min_wd)}*. The fastest way there? "
-            f"*Invest your bonus* and let it compound. "
-            f"Our Foundation plan pays *1.5% daily* — your ₱50 becomes ₱55.25 in just 7 days.\n\n"
+            f"*Invest your bonus* and let it compound.\n\n"
             f"🚀 Hit *Invest* below and put your bonus to work right now.",
-            reply_markup=main_menu(is_admin=is_admin_user(user.id)),
+            reply_markup=main_menu(is_admin=is_admin_user(user.id), web_url=web_url),
             parse_mode="Markdown",
         )
         return -1
@@ -114,7 +120,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     total_invested = record["total_invested"]
     total_earned = record["total_earned"]
 
-    # How close are they to the withdrawal minimum?
     gap = max(0.0, min_wd - balance)
     if gap > 0 and balance > 0:
         pct = int((balance / min_wd) * 100)
@@ -133,7 +138,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         withdrawal_tease = ""
 
     text = (
-        f"👷 *{BRAND_NAME}*\n"
+        f"🍵 *{BRAND_NAME}*\n"
         f"_{BRAND_TAGLINE}_\n\n"
         f"👋 Welcome back, *{user.first_name or 'Investor'}*!\n\n"
         f"{welcome}\n\n"
@@ -145,7 +150,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
     await update.effective_message.reply_text(
         text,
-        reply_markup=main_menu(is_admin=is_admin_user(user.id)),
+        reply_markup=main_menu(is_admin=is_admin_user(user.id), web_url=web_url),
         parse_mode="Markdown",
     )
     return -1
@@ -175,6 +180,13 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         else:
             wd_line = ""
 
+        # Refresh web token for menu refresh
+        web_host = os.environ.get("WEB_HOST_URL", "").strip()
+        web_url = ""
+        if web_host:
+            token = db.create_web_login_token(user.id, ttl_seconds=3600)
+            web_url = f"{web_host}/app/auth?token={token}"
+
         text = (
             f"🏠 *Main Menu*\n\n"
             f"💰 Balance: *{fmt_money(balance)}*\n"
@@ -184,7 +196,7 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         await query.edit_message_text(
             text,
-            reply_markup=main_menu(is_admin=is_admin_user(user.id)),
+            reply_markup=main_menu(is_admin=is_admin_user(user.id), web_url=web_url),
             parse_mode="Markdown",
         )
         return -1

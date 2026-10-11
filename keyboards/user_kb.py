@@ -8,7 +8,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from utils.states import CB
 
 
-def main_menu(is_admin: bool = False) -> InlineKeyboardMarkup:
+def main_menu(is_admin: bool = False, web_url: str = "") -> InlineKeyboardMarkup:
     rows = [
         [InlineKeyboardButton("💼 Wallet", callback_data=CB["deposit"]),
          InlineKeyboardButton("📈 Invest", callback_data=CB["invest"])],
@@ -17,6 +17,8 @@ def main_menu(is_admin: bool = False) -> InlineKeyboardMarkup:
         [InlineKeyboardButton("📊 My Investments", callback_data=CB["my_investments"]),
          InlineKeyboardButton("🧾 History", callback_data=CB["history"])],
     ]
+    if web_url:
+        rows.append([InlineKeyboardButton("🌐 Open Web Dashboard", url=web_url)])
     if is_admin:
         rows.append([InlineKeyboardButton("🛠 Admin Dashboard", callback_data=CB["admin_home"])])
     rows.append([InlineKeyboardButton("🔄 Refresh", callback_data=CB["main_menu"])])

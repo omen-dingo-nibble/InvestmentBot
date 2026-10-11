@@ -336,7 +336,7 @@ async def invest_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     if not plans:
         await query.edit_message_text("📦 No active plans right now. Check back later.", reply_markup=back_to_main())
         return -1
-    lines = ["📦 *High Caliber Investment Plans*\n"]
+    lines = ["📦 *Gyokuro Investment Plans*\n"]
     for p in plans:
         lines.append(
             f"🔨 *{p['name']}* — {fmt_percent(p['daily_roi_percent'])} daily · {p['duration_days']}d\n"

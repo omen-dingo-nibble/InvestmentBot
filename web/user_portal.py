@@ -275,20 +275,46 @@ def invite():
 def me():
     db = get_db()
     user = get_portal_user()
+
+    # Enrich investments with live earnings (same as home)
     investments = db.list_investments(user_id=user["user_id"], limit=50)
-    transactions = db.list_transactions(user_id=user["user_id"], limit=20)
+    for inv in investments:
+        inv["_earned_to_date"] = db.compute_investment_earnings_to_date(inv)
+        total = db.compute_investment_total_earnings(inv)
+        inv["_progress_pct"] = min(100, int((inv["_earned_to_date"] / total * 100) if total > 0 else 0))
+        inv["_days_left"] = max(0, int((inv["expires_at"] - int(time.time())) / 86400))
+        inv["_daily_earn"] = round(float(inv["principal"]) * float(inv["daily_roi_percent"]) / 100.0, 2)
+
+    # Split by type for the wallet history tabs
+    deposit_txs = db.list_transactions(user_id=user["user_id"], tx_type="deposit", limit=20)
+    withdrawal_txs = db.list_transactions(user_id=user["user_id"], tx_type="withdrawal", limit=20)
+    all_txs = db.list_transactions(user_id=user["user_id"], limit=30)
+
     ref_info = db.referral_stats(user["user_id"])
     min_wd = float(db.get_setting("min_withdrawal_usd", 5.0))
+    min_dep = float(db.get_setting("min_deposit_usd", 500.0))
     bot_username = db.get_setting("bot_username", "GyokuroBot")
+    support = db.get_setting("support_handle", "@GyokuroSupport")
+
+    # Withdrawal readiness
+    balance = float(user["balance"])
+    wd_gap = max(0.0, min_wd - balance)
+    wd_pct = min(100, int(balance / min_wd * 100)) if min_wd > 0 else 100
 
     return render_template(
         "portal/me.html",
         user=user,
         investments=investments,
-        transactions=transactions,
+        deposit_txs=deposit_txs,
+        withdrawal_txs=withdrawal_txs,
+        all_txs=all_txs,
         ref_info=ref_info,
         min_wd=min_wd,
+        min_dep=min_dep,
+        wd_gap=wd_gap,
+        wd_pct=wd_pct,
         bot_username=bot_username,
+        support=support,
     )
 
 
@@ -299,11 +325,46 @@ def me():
 @portal.route("/api/balance")
 @portal_login_required
 def api_balance():
+    db = get_db()
     user = get_portal_user()
     if not user:
         return jsonify({"error": "not found"}), 404
+    ref_info = db.referral_stats(user["user_id"])
+    investments = db.list_investments(user_id=user["user_id"], status="active", limit=20)
+    live_earnings = sum(db.compute_investment_earnings_to_date(inv) for inv in investments)
     return jsonify({
         "balance": float(user["balance"]),
         "total_earned": float(user["total_earned"]),
         "total_invested": float(user["total_invested"]),
+        "total_deposited": float(user["total_deposited"]),
+        "total_withdrawn": float(user["total_withdrawn"]),
+        "referral_bonus": float(ref_info["bonus"]),
+        "live_earnings": round(live_earnings, 2),
+        "active_investments": len(investments),
     })
+
+
+@portal.route("/api/investments")
+@portal_login_required
+def api_investments():
+    db = get_db()
+    user = get_portal_user()
+    if not user:
+        return jsonify({"error": "not found"}), 404
+    investments = db.list_investments(user_id=user["user_id"], status="active", limit=20)
+    result = []
+    for inv in investments:
+        earned = db.compute_investment_earnings_to_date(inv)
+        total = db.compute_investment_total_earnings(inv)
+        result.append({
+            "id": inv["id"],
+            "plan_name": inv["plan_name"],
+            "principal": float(inv["principal"]),
+            "daily_roi_percent": float(inv["daily_roi_percent"]),
+            "earned_to_date": round(earned, 2),
+            "total_earnings": round(total, 2),
+            "progress_pct": min(100, int(earned / total * 100) if total > 0 else 0),
+            "days_left": max(0, int((inv["expires_at"] - int(time.time())) / 86400)),
+            "status": inv["status"],
+        })
+    return jsonify(result)
