@@ -22,6 +22,7 @@ from flask import (
     url_for,
     jsonify,
     abort,
+    current_app,
 )
 
 from database import get_db, Database
@@ -29,6 +30,57 @@ from web.app import csrf_protect, limiter, _sanitize
 
 log = logging.getLogger(__name__)
 portal = Blueprint("portal", __name__, url_prefix="/app")
+
+
+# ---------------------------------------------------------------------------
+# Async Telegram admin notification (fire-and-forget via bot token)
+# ---------------------------------------------------------------------------
+
+def _notify_admins_async(message: str, parse_mode: str = "Markdown") -> None:
+    """Send a Telegram message to all configured admin IDs in a background
+    thread so it never blocks the web request.  Uses the bot token from DB
+    settings (falls back to CONFIG.bot_token)."""
+    import threading
+
+    def _send():
+        try:
+            import urllib.request
+            import urllib.parse
+            from config import CONFIG
+            db = get_db()
+            token = db.get_setting("bot_token", "") or CONFIG.bot_token
+            if not token:
+                return
+            admin_ids = CONFIG.admin_ids or []
+            # Also read admin IDs from settings (comma-separated)
+            setting_ids_raw = db.get_setting("admin_ids", "")
+            if setting_ids_raw:
+                try:
+                    extra = [int(x.strip()) for x in str(setting_ids_raw).replace(";", ",").split(",") if x.strip().lstrip("-").isdigit()]
+                    admin_ids = list(set(list(admin_ids) + extra))
+                except Exception:
+                    pass
+            for admin_id in admin_ids:
+                try:
+                    params = urllib.parse.urlencode({
+                        "chat_id": admin_id,
+                        "text": message,
+                        "parse_mode": parse_mode,
+                    }).encode()
+                    req = urllib.request.Request(
+                        f"https://api.telegram.org/bot{token}/sendMessage",
+                        data=params,
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(req, timeout=8):
+                        pass
+                except Exception as e:
+                    log.debug("Admin notify failed for %s: %s", admin_id, e)
+        except Exception as e:
+            log.debug("_notify_admins_async error: %s", e)
+
+    threading.Thread(target=_send, daemon=True).start()
+
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +194,9 @@ def portal_register():
     error = None
     success = None
 
+    # Accept ?ref= from web mirror invite links (same as ?start=ref_<code> in Telegram)
+    ref_code_from_url = request.args.get("ref", "").strip()
+
     if request.method == "POST":
         # The form submits a hidden 'phone' field built by JS (prefix + number).
         # Fall back to combining prefix + phone_number when JS is disabled.
@@ -155,7 +210,8 @@ def portal_register():
         full_name = request.form.get("full_name", "").strip()
         password = request.form.get("password", "")
         confirm = request.form.get("confirm_password", "")
-        ref_code = request.form.get("ref_code", "").strip()
+        # ref_code can come from form field or URL param
+        ref_code = request.form.get("ref_code", "").strip() or ref_code_from_url
 
         if not phone or not password:
             error = "Phone number and password are required."
@@ -197,7 +253,7 @@ def portal_register():
                            bot_username=bot_username,
                            error=error,
                            mode="register",
-                           ref_code=request.args.get("ref", ""))
+                           ref_code=request.form.get("ref_code", ref_code_from_url))
 
 
 @portal.route("/auth")
@@ -354,6 +410,150 @@ def plans():
 
 
 # ---------------------------------------------------------------------------
+# Invest — buy a plan directly from the web portal
+# ---------------------------------------------------------------------------
+
+@portal.route("/invest", methods=["GET", "POST"])
+@portal_login_required
+@csrf_protect
+def invest():
+    db = get_db()
+    user = get_portal_user()
+    fresh_user = db.get_user(user["user_id"])
+    real_balance = float(fresh_user["balance"]) if fresh_user else 0.0
+    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    all_plans = db.list_plans(active_only=True)
+
+    # Enrich plans
+    for p in all_plans:
+        p["_total_return"] = round(p["min_amount"] * p["daily_roi_percent"] / 100.0 * p["duration_days"], 2)
+        p["_total_return_max"] = round(p["max_amount"] * p["daily_roi_percent"] / 100.0 * p["duration_days"], 2)
+
+    # Pre-select plan from query string (e.g. ?plan_id=3)
+    preselect_id = request.args.get("plan_id", type=int)
+    selected_plan = None
+    if preselect_id:
+        selected_plan = next((p for p in all_plans if p["id"] == preselect_id), None)
+
+    error = None
+    success = None
+    confirm_data = None  # dict shown in the confirm step
+
+    if request.method == "POST":
+        step = request.form.get("step", "select")
+
+        if step == "select":
+            # User chose a plan and entered an amount — show confirm screen
+            plan_id = request.form.get("plan_id", type=int)
+            amount_str = request.form.get("amount", "").strip()
+            selected_plan = next((p for p in all_plans if p["id"] == plan_id), None)
+
+            if not selected_plan:
+                error = "Plan not found. Please select a valid plan."
+            elif not amount_str:
+                error = "Please enter the amount you want to invest."
+            else:
+                try:
+                    amount_val = float(amount_str)
+                    if amount_val <= 0:
+                        error = "Amount must be positive."
+                    elif amount_val < selected_plan["min_amount"]:
+                        error = f"Minimum for this plan is ₱{selected_plan['min_amount']:,.2f}."
+                    elif amount_val > selected_plan["max_amount"]:
+                        error = f"Maximum for this plan is ₱{selected_plan['max_amount']:,.2f}."
+                    elif amount_val > real_balance:
+                        error = f"Insufficient balance. Your balance is ₱{real_balance:,.2f}."
+                    else:
+                        # Show confirm step
+                        total_return = round(amount_val * selected_plan["daily_roi_percent"] / 100.0 * selected_plan["duration_days"], 2)
+                        daily_earn = round(amount_val * selected_plan["daily_roi_percent"] / 100.0, 2)
+                        confirm_data = {
+                            "plan_id": selected_plan["id"],
+                            "plan_name": selected_plan["name"],
+                            "amount": amount_val,
+                            "daily_roi_percent": selected_plan["daily_roi_percent"],
+                            "duration_days": selected_plan["duration_days"],
+                            "capital_return": selected_plan["capital_return"],
+                            "daily_earn": daily_earn,
+                            "total_return": total_return,
+                        }
+                except (ValueError, TypeError):
+                    error = "Please enter a valid amount."
+
+        elif step == "confirm":
+            # User confirmed — execute the investment
+            plan_id = request.form.get("plan_id", type=int)
+            amount_str = request.form.get("amount", "").strip()
+            selected_plan = next((p for p in all_plans if p["id"] == plan_id), None)
+
+            if not selected_plan:
+                error = "Plan not found."
+            elif not amount_str:
+                error = "Invalid investment data."
+            else:
+                try:
+                    amount_val = float(amount_str)
+                    # Re-validate everything server-side (never trust form hidden fields)
+                    fresh_user = db.get_user(user["user_id"])
+                    real_balance = float(fresh_user["balance"]) if fresh_user else 0.0
+
+                    if amount_val <= 0:
+                        error = "Amount must be positive."
+                    elif amount_val < selected_plan["min_amount"]:
+                        error = f"Minimum for this plan is ₱{selected_plan['min_amount']:,.2f}."
+                    elif amount_val > selected_plan["max_amount"]:
+                        error = f"Maximum for this plan is ₱{selected_plan['max_amount']:,.2f}."
+                    elif amount_val > real_balance:
+                        error = f"Insufficient balance. Your balance is ₱{real_balance:,.2f}."
+                    else:
+                        inv = db.create_investment(user["user_id"], selected_plan, amount_val)
+                        db.log_user_session(
+                            user_id=user["user_id"],
+                            action="invest_web",
+                            ip_address=request.remote_addr,
+                            platform="web",
+                            details=f"Invested ₱{amount_val:.2f} in {selected_plan['name']}, inv_id={inv['id']}",
+                        )
+                        # Check if balance was actually deducted (insufficient balance guard)
+                        after = db.get_user(user["user_id"])
+                        if after and abs(float(after["balance"]) - (real_balance - amount_val)) > 0.01:
+                            error = "Investment failed — insufficient balance. Please try again."
+                        else:
+                            total_return = round(amount_val * selected_plan["daily_roi_percent"] / 100.0 * selected_plan["duration_days"], 2)
+                            # Notify Telegram admins
+                            _notify_admins_async(
+                                f"📈 *New web investment* `#{inv['id']}`\n\n"
+                                f"User: `{user['user_id']}` {user.get('full_name') or user.get('username') or ''}\n"
+                                f"Plan: *{selected_plan['name']}*\n"
+                                f"Amount: *₱{amount_val:,.2f}*\n"
+                                f"Daily ROI: {selected_plan['daily_roi_percent']}% × {selected_plan['duration_days']}d\n"
+                                f"Expected return: ₱{total_return:,.2f}\n"
+                                f"Source: 🌐 Web Portal"
+                            )
+                            success = (
+                                f"✅ Investment #{inv['id']} created! "
+                                f"₱{amount_val:,.2f} in {selected_plan['name']} is now active. "
+                                f"You'll earn ₱{round(amount_val * selected_plan['daily_roi_percent'] / 100, 2):,.2f}/day."
+                            )
+                            selected_plan = None  # clear so we go back to plan list
+
+                except (ValueError, TypeError):
+                    error = "Please enter a valid amount."
+
+    return render_template(
+        "portal/invest.html",
+        user=user,
+        plans=all_plans,
+        selected_plan=selected_plan,
+        real_balance=real_balance,
+        bot_username=bot_username,
+        error=error,
+        success=success,
+        confirm_data=confirm_data,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Rewards
 # ---------------------------------------------------------------------------
 
@@ -406,6 +606,32 @@ def invite():
     min_plan = db.list_plans(active_only=True)
     first_plan = min_plan[0] if min_plan else None
 
+    # Build multi-mirror invite links
+    # Telegram bot link (always present)
+    tg_link = f"https://t.me/{bot_username}?start=ref_{user['referral_code']}"
+
+    # Web mirror links: read comma-separated site_urls setting
+    # e.g. "https://gyokuro.app,https://mirror1.gyokuro.com,https://gyokuro.io"
+    site_urls_raw = db.get_setting("site_urls", "").strip()
+    web_mirror_links = []
+    if site_urls_raw:
+        for raw_url in site_urls_raw.replace("\n", ",").split(","):
+            url = raw_url.strip().rstrip("/")
+            if url:
+                web_mirror_links.append({
+                    "label": url.replace("https://", "").replace("http://", ""),
+                    "url": f"{url}/app/register?ref={user['referral_code']}",
+                })
+
+    # Also include the current request host as a mirror if not already listed
+    current_origin = request.host_url.rstrip("/")
+    current_label = request.host
+    if current_origin and not any(m["url"].startswith(current_origin) for m in web_mirror_links):
+        web_mirror_links.insert(0, {
+            "label": current_label,
+            "url": f"{current_origin}/app/register?ref={user['referral_code']}",
+        })
+
     return render_template(
         "portal/invite.html",
         user=user,
@@ -413,6 +639,8 @@ def invite():
         ref_bonus_pct=ref_bonus_pct,
         bot_username=bot_username,
         first_plan=first_plan,
+        tg_link=tg_link,
+        web_mirror_links=web_mirror_links,
     )
 
 
@@ -607,6 +835,15 @@ def deposit():
                         ip_address=request.remote_addr,
                         platform="web",
                         details=f"Deposit ₱{amount_val:.2f} via {crypto}, tx_id={tx_id}",
+                    )
+                    # Notify Telegram admins about the new web deposit
+                    _notify_admins_async(
+                        f"💰 *New web deposit request* `#{tx_id}`\n\n"
+                        f"User: `{user['user_id']}` {user.get('full_name') or user.get('username') or ''}\n"
+                        f"Amount: *₱{amount_val:,.2f}*\n"
+                        f"Crypto: {crypto}\n"
+                        f"TX hash: `{tx_hash or '-'}`\n"
+                        f"Source: 🌐 Web Portal"
                     )
                     success = (
                         f"Deposit of ₱{amount_val:,.2f} submitted (#{tx_id}). "

@@ -1,0 +1,294 @@
+{% extends "portal/base.html" %}
+{% block title %}Buy a Plan — Gyokuro{% endblock %}
+
+{% block topbar %}
+<div class="top-bar">
+    <a href="{{ url_for('portal.plans') }}" style="color:var(--gyo-muted);font-size:1.2rem;text-decoration:none;margin-right:8px;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div style="flex:1;">
+        <div style="font-size:1.15rem;font-weight:800;color:var(--gyo-text);">Buy a Plan</div>
+        <div style="font-size:.72rem;color:var(--gyo-muted);">Pay once. Get paid every day.</div>
+    </div>
+    <div class="brand-logo">GY</div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% if success %}
+<!-- ── Success ── -->
+<div style="margin:24px 16px;">
+    <div style="background:rgba(29,185,84,.08);border:1px solid rgba(29,185,84,.2);border-radius:18px;padding:28px 20px;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:8px;">Investment Active!</div>
+        <div style="font-size:.88rem;color:var(--gyo-muted);line-height:1.6;margin-bottom:20px;">{{ success }}</div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <a href="{{ url_for('portal.home') }}"
+               style="display:inline-block;background:var(--gyo-green);color:#fff;font-weight:700;padding:12px 22px;border-radius:12px;text-decoration:none;">
+                Dashboard
+            </a>
+            <a href="{{ url_for('portal.invest') }}"
+               style="display:inline-block;background:var(--gyo-card2);color:var(--gyo-text);font-weight:600;padding:12px 22px;border-radius:12px;text-decoration:none;border:1px solid var(--gyo-border);">
+                Buy Another Plan
+            </a>
+        </div>
+    </div>
+</div>
+
+{% elif confirm_data %}
+<!-- ── Confirm Step ── -->
+{% if error %}
+<div style="margin:12px 16px 0;padding:12px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:12px;font-size:.85rem;color:#FCA5A5;display:flex;align-items:center;gap:8px;">
+    <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
+</div>
+{% endif %}
+
+<div style="margin:16px 16px 0;background:rgba(29,185,84,.05);border:1px solid rgba(29,185,84,.18);border-radius:18px;padding:20px;">
+    <div style="font-size:.72rem;font-weight:700;color:var(--gyo-green);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">Confirm Investment</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div style="background:var(--gyo-card2);border-radius:12px;padding:12px;border:1px solid var(--gyo-border);">
+            <div style="font-size:.68rem;color:var(--gyo-muted);margin-bottom:3px;">Plan</div>
+            <div style="font-size:.9rem;font-weight:700;">{{ confirm_data.plan_name }}</div>
+        </div>
+        <div style="background:var(--gyo-card2);border-radius:12px;padding:12px;border:1px solid var(--gyo-border);">
+            <div style="font-size:.68rem;color:var(--gyo-muted);margin-bottom:3px;">Amount</div>
+            <div style="font-size:.9rem;font-weight:700;color:var(--gyo-green);">₱{{ "{:,.2f}".format(confirm_data.amount) }}</div>
+        </div>
+        <div style="background:var(--gyo-card2);border-radius:12px;padding:12px;border:1px solid var(--gyo-border);">
+            <div style="font-size:.68rem;color:var(--gyo-muted);margin-bottom:3px;">Daily Earn</div>
+            <div style="font-size:.9rem;font-weight:700;color:var(--gyo-gold);">+₱{{ "{:,.2f}".format(confirm_data.daily_earn) }}</div>
+        </div>
+        <div style="background:var(--gyo-card2);border-radius:12px;padding:12px;border:1px solid var(--gyo-border);">
+            <div style="font-size:.68rem;color:var(--gyo-muted);margin-bottom:3px;">Duration</div>
+            <div style="font-size:.9rem;font-weight:700;">{{ confirm_data.duration_days }} days</div>
+        </div>
+        <div style="background:var(--gyo-card2);border-radius:12px;padding:12px;border:1px solid var(--gyo-border);">
+            <div style="font-size:.68rem;color:var(--gyo-muted);margin-bottom:3px;">Total Return</div>
+            <div style="font-size:.9rem;font-weight:700;color:var(--gyo-green);">₱{{ "{:,.2f}".format(confirm_data.total_return) }}</div>
+        </div>
+        <div style="background:var(--gyo-card2);border-radius:12px;padding:12px;border:1px solid var(--gyo-border);">
+            <div style="font-size:.68rem;color:var(--gyo-muted);margin-bottom:3px;">Capital Back</div>
+            <div style="font-size:.9rem;font-weight:700;">{{ 'Yes ✅' if confirm_data.capital_return else 'No' }}</div>
+        </div>
+    </div>
+
+    <div style="margin-bottom:14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px 14px;font-size:.8rem;color:var(--gyo-gold);">
+        <i class="bi bi-info-circle me-1"></i>
+        ₱{{ "{:,.2f}".format(confirm_data.amount) }} will be deducted from your balance now.
+        Your balance: <strong>₱{{ "{:,.2f}".format(real_balance) }}</strong>
+    </div>
+
+    <form method="POST" action="{{ url_for('portal.invest') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="step" value="confirm">
+        <input type="hidden" name="plan_id" value="{{ confirm_data.plan_id }}">
+        <input type="hidden" name="amount" value="{{ confirm_data.amount }}">
+        <div style="display:flex;gap:10px;">
+            <button type="submit"
+                    style="flex:1;background:var(--gyo-green);color:#fff;font-weight:700;font-size:1rem;border:none;border-radius:14px;padding:15px;cursor:pointer;">
+                ✅ Confirm &amp; Invest
+            </button>
+            <a href="{{ url_for('portal.invest', plan_id=confirm_data.plan_id) }}"
+               style="flex:0;background:var(--gyo-card2);color:var(--gyo-muted);font-weight:600;padding:15px 18px;border-radius:14px;text-decoration:none;display:flex;align-items:center;border:1px solid var(--gyo-border);">
+                ← Back
+            </a>
+        </div>
+    </form>
+</div>
+
+{% else %}
+<!-- ── Plan selection + amount entry ── -->
+
+{% if error %}
+<div style="margin:12px 16px 0;padding:12px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:12px;font-size:.85rem;color:#FCA5A5;display:flex;align-items:center;gap:8px;">
+    <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
+</div>
+{% endif %}
+
+<!-- Balance pill -->
+<div style="margin:14px 16px 0;display:flex;align-items:center;justify-content:space-between;background:var(--gyo-card);border-radius:14px;padding:14px 16px;border:1px solid var(--gyo-border);">
+    <div>
+        <div style="font-size:.7rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;">Available Balance</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--gyo-green);">₱{{ "{:,.2f}".format(real_balance) }}</div>
+    </div>
+    {% if real_balance <= 0 %}
+    <a href="{{ url_for('portal.deposit') }}"
+       style="background:var(--gyo-green);color:#fff;font-weight:700;padding:10px 16px;border-radius:12px;text-decoration:none;font-size:.85rem;">
+        ⬇ Top Up
+    </a>
+    {% endif %}
+</div>
+
+{% if real_balance <= 0 %}
+<div style="margin:12px 16px;padding:16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:14px;font-size:.85rem;color:var(--gyo-gold);text-align:center;">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    You need funds to invest. Top up your balance first.
+</div>
+{% endif %}
+
+<!-- Plan picker -->
+<form method="POST" action="{{ url_for('portal.invest') }}" id="investForm">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="step" value="select">
+    <input type="hidden" name="plan_id" id="hiddenPlanId" value="{{ selected_plan.id if selected_plan else '' }}">
+
+    <div style="margin:14px 16px 0;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+            Choose a Plan
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            {% for plan in plans %}
+            <div class="plan-option {% if selected_plan and selected_plan.id == plan.id %}selected{% endif %}"
+                 onclick="selectPlan({{ plan.id }}, {{ plan.min_amount }}, {{ plan.max_amount }})"
+                 style="background:var(--gyo-card);border-radius:14px;padding:14px 16px;border:2px solid {% if selected_plan and selected_plan.id == plan.id %}var(--gyo-green){% else %}var(--gyo-border){% endif %};cursor:pointer;transition:border-color .15s;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div>
+                        <div style="font-size:.95rem;font-weight:700;margin-bottom:2px;">{{ plan.name }}</div>
+                        <div style="font-size:.75rem;color:var(--gyo-muted);">
+                            {{ plan.daily_roi_percent }}%/day · {{ plan.duration_days }}d ·
+                            ₱{{ "{:,.0f}".format(plan.min_amount) }}–₱{{ "{:,.0f}".format(plan.max_amount) }}
+                        </div>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+                        <div style="font-size:.88rem;font-weight:800;color:var(--gyo-gold);">
+                            +₱{{ "{:,.0f}".format(plan._total_return / plan.duration_days) }}/day
+                        </div>
+                        <div style="font-size:.68rem;color:var(--gyo-muted);">on min</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Amount input -->
+    <div style="margin:16px 16px 0;" id="amountSection" {% if not selected_plan %}style="display:none;"{% endif %}>
+        <div style="font-size:.78rem;font-weight:700;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+            Investment Amount (₱)
+        </div>
+        <div style="background:var(--gyo-card);border-radius:14px;border:1px solid var(--gyo-border);padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <span style="color:var(--gyo-muted);font-size:1.1rem;font-weight:600;">₱</span>
+                <input type="number" name="amount" id="amountInput"
+                       step="1" min="0"
+                       value="{{ request.form.get('amount', selected_plan.min_amount if selected_plan else '') }}"
+                       placeholder="Enter amount"
+                       style="flex:1;background:transparent;border:none;outline:none;font-size:1.3rem;font-weight:800;color:var(--gyo-text);width:100%;"
+                       oninput="updatePreview(this.value)">
+            </div>
+
+            <!-- Quick-fill buttons -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="quickFillRow">
+                <!-- filled by JS -->
+            </div>
+
+            <!-- Live preview -->
+            <div id="livePreview" style="margin-top:12px;padding:10px;background:var(--gyo-surface);border-radius:10px;font-size:.8rem;color:var(--gyo-muted);display:none;">
+                Daily: <strong id="pvDaily" style="color:var(--gyo-gold);">—</strong> ·
+                Total: <strong id="pvTotal" style="color:var(--gyo-green);">—</strong> ·
+                Duration: <strong id="pvDuration">—</strong>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin:16px 16px 0;padding-bottom:8px;">
+        <button type="submit" id="submitBtn"
+                style="width:100%;background:var(--gyo-green);color:#fff;font-weight:700;font-size:1rem;border:none;border-radius:14px;padding:16px;cursor:pointer;opacity:{% if selected_plan %}1{% else %}.4{% endif %};"
+                {% if not selected_plan %}disabled{% endif %}>
+            Continue →
+        </button>
+    </div>
+</form>
+{% endif %}
+
+<div style="height:16px;"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Plan metadata from server
+const PLANS = {
+    {% for plan in plans %}
+    {{ plan.id }}: {
+        name: "{{ plan.name|e }}",
+        min: {{ plan.min_amount }},
+        max: {{ plan.max_amount }},
+        roi: {{ plan.daily_roi_percent }},
+        dur: {{ plan.duration_days }},
+    },
+    {% endfor %}
+};
+
+let activePlanId = {{ selected_plan.id if selected_plan else 'null' }};
+
+function selectPlan(planId, minAmt, maxAmt) {
+    activePlanId = planId;
+    // Update hidden field
+    document.getElementById('hiddenPlanId').value = planId;
+    // Highlight selected card
+    document.querySelectorAll('.plan-option').forEach(el => {
+        el.style.borderColor = 'var(--gyo-border)';
+    });
+    const selected = document.querySelector(`.plan-option[onclick*="selectPlan(${planId},"]`);
+    if (selected) selected.style.borderColor = 'var(--gyo-green)';
+
+    // Show amount section
+    const section = document.getElementById('amountSection');
+    if (section) section.removeAttribute('style');
+
+    // Set min on input
+    const inp = document.getElementById('amountInput');
+    if (inp) {
+        inp.min = minAmt;
+        inp.max = maxAmt;
+        if (!inp.value || parseFloat(inp.value) < minAmt) inp.value = minAmt;
+        updatePreview(inp.value);
+    }
+
+    // Update quick-fill buttons
+    const row = document.getElementById('quickFillRow');
+    if (row) {
+        const amounts = [minAmt, minAmt * 2, minAmt * 5].filter(a => a <= maxAmt);
+        if (!amounts.includes(maxAmt) && maxAmt < minAmt * 10) amounts.push(maxAmt);
+        row.innerHTML = amounts.slice(0, 4).map(a =>
+            `<button type="button" onclick="setAmount(${a})"
+                style="background:var(--gyo-glow);color:var(--gyo-green);border:1px solid var(--gyo-border);border-radius:8px;padding:5px 12px;font-size:.78rem;font-weight:600;cursor:pointer;">
+                ₱${a.toLocaleString()}
+            </button>`
+        ).join('');
+    }
+
+    // Enable submit
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+}
+
+function setAmount(val) {
+    const inp = document.getElementById('amountInput');
+    if (inp) { inp.value = val; updatePreview(val); }
+}
+
+function updatePreview(val) {
+    if (!activePlanId || !PLANS[activePlanId]) return;
+    const p = PLANS[activePlanId];
+    const amt = parseFloat(val);
+    if (!amt || amt <= 0) {
+        document.getElementById('livePreview').style.display = 'none';
+        return;
+    }
+    const daily = (amt * p.roi / 100).toFixed(2);
+    const total = (amt * p.roi / 100 * p.dur).toFixed(2);
+    document.getElementById('pvDaily').textContent = '₱' + parseFloat(daily).toLocaleString('en-PH', {minimumFractionDigits:2});
+    document.getElementById('pvTotal').textContent = '₱' + parseFloat(total).toLocaleString('en-PH', {minimumFractionDigits:2});
+    document.getElementById('pvDuration').textContent = p.dur + ' days';
+    document.getElementById('livePreview').style.display = 'block';
+}
+
+// Init if a plan was pre-selected
+{% if selected_plan %}
+selectPlan({{ selected_plan.id }}, {{ selected_plan.min_amount }}, {{ selected_plan.max_amount }});
+{% endif %}
+</script>
+{% endblock %}

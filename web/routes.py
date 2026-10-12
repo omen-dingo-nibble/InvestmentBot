@@ -1239,6 +1239,7 @@ def settings():
             "support_handle": request.form.get("support_handle", "@HCCNWAdmin").strip(),
             "maintenance_mode": request.form.get("maintenance_mode") == "on",
             "welcome_message": request.form.get("welcome_message", "").strip(),
+            "site_urls": request.form.get("site_urls", "").strip(),
         }
         float_keys = {"min_deposit_usd", "min_withdrawal_usd", "referral_bonus_percent", "usd_to_php_rate", "signup_bonus_php"}
         for k, v in settings_map.items():

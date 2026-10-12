@@ -157,6 +157,23 @@
                     <textarea name="welcome_message" class="form-control" rows="4"
                               placeholder="ウェルカムメッセージ…">{{ settings.get('welcome_message', '') }}</textarea>
                 </div>
+
+                <!-- Mirror site URLs -->
+                <div class="col-12">
+                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">
+                        <i class="bi bi-globe me-1"></i>Mirror Site URLs
+                        <span style="font-size:.72rem;font-weight:400;margin-left:6px;">
+                            Comma-separated. Used to generate web invite links for each domain.
+                        </span>
+                    </label>
+                    <textarea name="site_urls" class="form-control" rows="3"
+                              placeholder="https://gyokuro.app, https://mirror1.gyokuro.com, https://gyokuro.io"
+                              style="font-size:.83rem;font-family:monospace;">{{ settings.get('site_urls', '') }}</textarea>
+                    <div style="font-size:.72rem;color:var(--gyo-muted);margin-top:4px;">
+                        Each URL becomes an invite link on the portal and a line in the Telegram /referral message.
+                        Example: <code>https://gyokuro.app, https://gyokuro.io</code>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

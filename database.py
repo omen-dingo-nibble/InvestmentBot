@@ -331,6 +331,7 @@ class Database:
                     "maintenance_mode": json.dumps(False),
                     "usd_to_php_rate": str(CONFIG.default_php_rate),
                     "signup_bonus_php": "50",
+                    "site_urls": "",   # comma-separated mirror domains, e.g. https://gyokuro.app,https://mirror.gyokuro.com
                     "welcome_message": (
                         f"Welcome to {BRAND_NAME}!\n\n"
                         "Gyokuro is your gateway to smart daily earnings. "

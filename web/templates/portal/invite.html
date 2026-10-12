@@ -13,7 +13,7 @@
 
 {% block content %}
 <!-- Invite card -->
-{% set ref_link = "https://t.me/" ~ bot_username ~ "?start=ref_" ~ user.referral_code %}
+{% set ref_link = tg_link %}
 <div class="invite-card">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;">
         <div style="flex:1;">
@@ -23,19 +23,35 @@
                 <button class="copy-btn" onclick="copyText('{{ user.referral_code }}', this)">Copy</button>
             </div>
 
-            <div class="ic-label">INVITE LINK</div>
+            <div class="ic-label">TELEGRAM INVITE LINK</div>
             <div class="link-box">
-                <i class="bi bi-link-45deg" style="flex-shrink:0;color:#3B82F6;"></i>
-                <span class="link-text">{{ ref_link }}</span>
-                <button class="copy-btn" onclick="copyText('{{ ref_link }}', this)" style="flex-shrink:0;">Copy</button>
+                <i class="bi bi-telegram" style="flex-shrink:0;color:#28a8e8;"></i>
+                <span class="link-text">{{ tg_link }}</span>
+                <button class="copy-btn" onclick="copyText('{{ tg_link }}', this)" style="flex-shrink:0;">Copy</button>
             </div>
+
+            {% if web_mirror_links %}
+            <div class="ic-label" style="margin-top:12px;">🌐 WEB INVITE LINKS</div>
+            <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
+                {% for m in web_mirror_links %}
+                <div style="background:var(--gyo-card2);border-radius:12px;border:1px solid var(--gyo-border);padding:10px 12px;display:flex;align-items:center;gap:8px;">
+                    <i class="bi bi-globe2" style="color:var(--gyo-green);flex-shrink:0;"></i>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:.7rem;color:var(--gyo-muted);margin-bottom:1px;">{{ m.label }}</div>
+                        <div class="link-text" style="font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ m.url }}</div>
+                    </div>
+                    <button class="copy-btn" onclick="copyText('{{ m.url }}', this)" style="flex-shrink:0;">Copy</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             <div class="share-row">
                 <button class="share-btn primary" onclick="shareLink()">
-                    <i class="bi bi-share"></i> Share link
+                    <i class="bi bi-share"></i> Share Telegram link
                 </button>
-                <button class="share-btn secondary" onclick="copyText('{{ ref_link }}', this)">
-                    <i class="bi bi-qr-code"></i> Copy link
+                <button class="share-btn secondary" onclick="copyText('{{ tg_link }}', this)">
+                    <i class="bi bi-clipboard"></i> Copy
                 </button>
             </div>
         </div>
@@ -134,7 +150,7 @@
 {% block extra_scripts %}
 <script>
 function shareLink() {
-    const url = '{{ ref_link }}';
+    const url = '{{ tg_link }}';
     const text = 'Join Gyokuro and start earning daily returns! Use my referral link:';
     if (navigator.share) {
         navigator.share({ title: 'Join Gyokuro', text, url }).catch(() => {});

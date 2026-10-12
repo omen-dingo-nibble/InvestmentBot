@@ -693,14 +693,29 @@ async def referral(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     stats = db.referral_stats(user.id)
     bot_username = (await context.bot.get_me()).username
     bonus_pct = float(db.get_setting("referral_bonus_percent", CONFIG.referral_bonus_percent))
-    link = f"https://t.me/{bot_username}?start=ref_{record['referral_code']}"
+    tg_link = f"https://t.me/{bot_username}?start=ref_{record['referral_code']}"
 
     lines = [
         "👥 *Referral Program*",
         "",
-        f"🔗 Your link:\n`{link}`",
+        f"🤖 *Telegram link:*\n`{tg_link}`",
         f"🆔 Or share code: `{record['referral_code']}`",
         "",
+    ]
+
+    # Add web mirror links if configured
+    site_urls_raw = (db.get_setting("site_urls", "") or "").strip()
+    if site_urls_raw:
+        lines.append("🌐 *Web links (works on any mirror):*")
+        for raw_url in site_urls_raw.replace("\n", ",").split(","):
+            url = raw_url.strip().rstrip("/")
+            if url:
+                label = url.replace("https://", "").replace("http://", "")
+                web_link = f"{url}/app/register?ref={record['referral_code']}"
+                lines.append(f"`{web_link}` ({label})")
+        lines.append("")
+
+    lines += [
         f"👤 Referrals: *{stats['total']}*",
         f"💸 Total events: *{stats['events']}*",
         f"🪙 Total earned: *{fmt_money(stats['bonus'])}*",
@@ -713,5 +728,8 @@ async def referral(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                 f"• {fmt_user(r)} — invested: {fmt_money(r['total_invested'])}, "
                 f"bonus: {fmt_money(r['total_bonus'])}"
             )
-    await query.edit_message_text("\n".join(lines), reply_markup=back_to_main(), parse_mode="Markdown")
+    await query.edit_message_text(
+        truncate("\n".join(lines), 3800),
+        reply_markup=back_to_main(), parse_mode="Markdown",
+    )
     return -1

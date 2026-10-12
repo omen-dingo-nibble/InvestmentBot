@@ -74,8 +74,8 @@
             <i class="bi bi-calendar3"></i> {{ plan.duration_days }} days ·
             Total ₱{{ "{:,.0f}".format(plan._total_return) }}
         </div>
-        <a href="https://t.me/{{ bot_username }}" class="plan-buy-btn" target="_blank">
-            Buy →
+        <a href="{{ url_for('portal.invest', plan_id=plan.id) }}" class="plan-buy-btn">
+            Buy Now →
         </a>
     </div>
 </div>
