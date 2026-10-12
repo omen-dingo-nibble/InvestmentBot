@@ -281,6 +281,16 @@ class Database:
                 self._conn.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
             except Exception:
                 pass
+            # Migrate: influencer display flag
+            try:
+                self._conn.execute("ALTER TABLE users ADD COLUMN is_influencer INTEGER NOT NULL DEFAULT 0")
+            except Exception:
+                pass
+            # Migrate: influencer display balance (what they see — not real balance)
+            try:
+                self._conn.execute("ALTER TABLE users ADD COLUMN influencer_display_balance REAL NOT NULL DEFAULT 10000.0")
+            except Exception:
+                pass
             # Create phone index idempotently
             try:
                 self._conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone)")
@@ -480,6 +490,19 @@ class Database:
         self.execute(
             "UPDATE users SET is_admin = ?, updated_at = ? WHERE user_id = ?",
             (1 if admin else 0, _now(), user_id),
+        )
+
+    def set_influencer(self, user_id: int, influencer: bool,
+                       display_balance: float = 10000.0) -> None:
+        """Toggle the influencer/promoter display flag.
+
+        When enabled the portal shows ``display_balance`` instead of the
+        real balance everywhere.  The real balance is untouched so the user
+        cannot withdraw the fake amount.
+        """
+        self.execute(
+            "UPDATE users SET is_influencer = ?, influencer_display_balance = ?, updated_at = ? WHERE user_id = ?",
+            (1 if influencer else 0, display_balance, _now(), user_id),
         )
 
     def update_user_fields(self, user_id: int, **fields) -> bool:
@@ -1290,6 +1313,30 @@ class Database:
     def get_user_by_phone(self, phone: str) -> Optional[Dict[str, Any]]:
         phone = self._normalize_phone(phone)
         return self.query_one("SELECT * FROM users WHERE phone = ?", (phone,))
+
+    def create_influencer_account(
+        self,
+        phone: str,
+        password: str,
+        full_name: str = "",
+        display_balance: float = 10000.0,
+        referral_code_used: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create a promoter / influencer account.
+
+        Behaves like ``register_phone_user`` but immediately sets the
+        ``is_influencer`` flag and the ``influencer_display_balance`` so the
+        portal shows the fake balance right from login.  The real ``balance``
+        column stays at 0 (or whatever deposits go in).
+        """
+        user = self.register_phone_user(
+            phone=phone,
+            password=password,
+            full_name=full_name,
+            referral_code_used=referral_code_used,
+        )
+        self.set_influencer(user["user_id"], influencer=True, display_balance=display_balance)
+        return self.get_user(user["user_id"])
 
     def verify_phone_password(self, phone: str, password: str) -> Optional[Dict[str, Any]]:
         """Return user row if phone+password are valid, else None."""

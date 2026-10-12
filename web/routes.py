@@ -233,7 +233,98 @@ def user_ban(user_id: int):
     return redirect(url_for("main.user_detail", user_id=user_id))
 
 
-@bp.route("/users/<sint:user_id>/adjust", methods=["POST"])
+# ---------------------------------------------------------------------------
+# Influencer / Promoter toggle
+# ---------------------------------------------------------------------------
+
+@bp.route("/users/<sint:user_id>/influencer", methods=["POST"])
+@login_required
+@csrf_protect
+def user_influencer_toggle(user_id: int):
+    db = get_db()
+    user = db.get_user(user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("main.users"))
+    new_status = not bool(user.get("is_influencer"))
+    try:
+        display_bal = float(request.form.get("display_balance", 10000.0) or 10000.0)
+    except (ValueError, TypeError):
+        display_bal = 10000.0
+    db.set_influencer(user_id, new_status, display_balance=display_bal)
+    db.log_audit(
+        action="set_influencer" if new_status else "remove_influencer",
+        admin_id=session.get("admin_id"),
+        admin_name=session.get("admin_name"),
+        target_type="user",
+        target_id=str(user_id),
+        details=f"{'Enabled' if new_status else 'Disabled'} influencer mode. Display balance: ₱{display_bal:,.2f}",
+        ip_address=request.remote_addr,
+    )
+    flash(
+        f"Influencer mode {'enabled — shows ₱{:,.2f}'.format(display_bal) if new_status else 'disabled'}.",
+        "success",
+    )
+    return redirect(url_for("main.user_detail", user_id=user_id))
+
+
+# ---------------------------------------------------------------------------
+# Create influencer / promoter account (quick form in admin panel)
+# ---------------------------------------------------------------------------
+
+@bp.route("/influencers/create", methods=["GET", "POST"])
+@login_required
+@csrf_protect
+def influencer_create():
+    db = get_db()
+    if request.method == "POST":
+        phone = _sanitize(request.form.get("phone", ""), max_len=20)
+        password = request.form.get("password", "")
+        full_name = _sanitize(request.form.get("full_name", ""), max_len=200)
+        try:
+            display_balance = float(request.form.get("display_balance", 10000.0) or 10000.0)
+        except (ValueError, TypeError):
+            display_balance = 10000.0
+
+        if not phone:
+            flash("Phone number is required.", "danger")
+            return render_template("influencer_create.html", admin=get_current_admin())
+        if len(password) < 6:
+            flash("Password must be at least 6 characters.", "danger")
+            return render_template("influencer_create.html", admin=get_current_admin())
+
+        try:
+            user = db.create_influencer_account(
+                phone=phone,
+                password=password,
+                full_name=full_name or phone,
+                display_balance=display_balance,
+            )
+            db.log_audit(
+                action="create_influencer",
+                admin_id=session.get("admin_id"),
+                admin_name=session.get("admin_name"),
+                target_type="user",
+                target_id=str(user["user_id"]),
+                details=f"Created influencer account {phone} ({full_name}) display=₱{display_balance:,.2f}",
+                ip_address=request.remote_addr,
+            )
+            flash(
+                f"Influencer account created for {phone} — shows ₱{display_balance:,.2f} balance. "
+                f"User ID: {user['user_id']}",
+                "success",
+            )
+            return redirect(url_for("main.user_detail", user_id=user["user_id"]))
+        except ValueError as e:
+            if "phone_taken" in str(e):
+                flash("That phone number is already registered.", "danger")
+            else:
+                flash(f"Error creating account: {e}", "danger")
+
+    return render_template("influencer_create.html", admin=get_current_admin())
+
+
+
 @login_required
 @csrf_protect
 def user_adjust_balance(user_id: int):

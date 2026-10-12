@@ -4,7 +4,13 @@
 
 <div class="page-header">
     <h4><i class="bi bi-people me-2 text-green"></i>ユーザー管理</h4>
-    <span style="color:var(--gyo-muted);font-size:.85rem;">{{ total }} 名</span>
+    <div class="d-flex gap-2 align-items-center">
+        <span style="color:var(--gyo-muted);font-size:.85rem;">{{ total }} 名</span>
+        <a href="{{ url_for('main.influencer_create') }}" class="btn btn-sm"
+           style="background:rgba(212,168,83,.15);color:var(--gyo-gold);border:1px solid rgba(212,168,83,.3);">
+            <i class="bi bi-star me-1"></i>New Influencer
+        </a>
+    </div>
 </div>
 
 <div class="card mb-3">
@@ -49,6 +55,9 @@
                     <span class="badge" style="background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);">Admin</span>
                     {% else %}
                     <span class="badge badge-active">Active</span>
+                    {% endif %}
+                    {% if u.is_influencer %}
+                    <span class="badge" style="background:rgba(212,168,83,.2);color:var(--gyo-gold);border:1px solid rgba(212,168,83,.3);">⭐</span>
                     {% endif %}
                 </td>
                 <td><small style="color:var(--gyo-muted);">{{ u.created_at | timeago }}</small></td>

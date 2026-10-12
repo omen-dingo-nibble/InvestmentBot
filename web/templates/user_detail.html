@@ -16,6 +16,7 @@
             {% if user.phone %} · {{ user.phone }}{% endif %}
             {% if user.is_banned %}<span class="badge badge-rejected ms-1">BANNED</span>{% endif %}
             {% if user.is_admin %}<span class="badge ms-1" style="background:rgba(124,58,237,.2);color:#a78bfa;">ADMIN</span>{% endif %}
+            {% if user.is_influencer %}<span class="badge ms-1" style="background:rgba(212,168,83,.2);color:var(--gyo-gold);border:1px solid rgba(212,168,83,.3);">⭐ INFLUENCER</span>{% endif %}
         </small>
     </div>
     <div class="d-flex gap-2 flex-wrap">
@@ -163,11 +164,24 @@
                     <dt class="col-5" style="color:var(--gyo-muted);">Last Active</dt>
                     <dd class="col-7">{{ last_session.created_at | timeago if last_session else '—' }}</dd>
 
+                    {% if user.is_influencer %}
+                    <dt class="col-5" style="color:var(--gyo-gold);">Display Balance</dt>
+                    <dd class="col-7" style="color:var(--gyo-gold);font-weight:700;">
+                        ₱{{ "{:,.2f}".format(user.influencer_display_balance or 10000) }}
+                        <span style="font-size:.7rem;color:var(--gyo-muted);font-weight:400;">(shown to user)</span>
+                    </dd>
+                    {% endif %}
+
                     <dt class="col-5" style="color:var(--gyo-muted);">Status</dt>
                     <dd class="col-7">
                         {% if user.is_banned %}<span class="badge badge-rejected">Banned</span>
                         {% elif user.is_admin %}<span class="badge" style="background:rgba(124,58,237,.2);color:#a78bfa;">Admin</span>
                         {% else %}<span class="badge badge-active">Active</span>{% endif %}
+                        {% if user.is_influencer %}
+                        <span class="badge ms-1" style="background:rgba(212,168,83,.2);color:var(--gyo-gold);border:1px solid rgba(212,168,83,.3);">
+                            ⭐ Influencer
+                        </span>
+                        {% endif %}
                     </dd>
                 </dl>
             </div>
@@ -199,11 +213,60 @@
                 <!-- Ban toggle -->
                 <form method="POST" action="{{ url_for('main.user_ban', user_id=user.user_id) }}"
                       onsubmit="return confirm('{{ 'Unban' if user.is_banned else 'Ban' }} this user?')">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <button class="btn w-100 btn-sm {{ 'btn-outline-success' if user.is_banned else 'btn-outline-danger' }}">
                         <i class="bi bi-{{ 'unlock' if user.is_banned else 'slash-circle' }} me-1"></i>
                         {{ 'Unban User' if user.is_banned else 'Ban User' }}
                     </button>
                 </form>
+
+                <hr style="border-color:var(--gyo-border);margin:4px 0;">
+
+                <!-- Influencer / Promoter toggle -->
+                <button class="btn btn-sm w-100" onclick="togglePanel('influencerPanel')"
+                        style="background:rgba(212,168,83,.12);color:var(--gyo-gold);border:1px solid rgba(212,168,83,.25);">
+                    <i class="bi bi-star me-1"></i>
+                    {{ 'Remove Influencer' if user.is_influencer else 'Make Influencer / Promoter' }}
+                </button>
+                <div id="influencerPanel" class="edit-panel" style="display:none;">
+                    <form method="POST" action="{{ url_for('main.user_influencer_toggle', user_id=user.user_id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        {% if not user.is_influencer %}
+                        <div style="font-size:.75rem;color:var(--gyo-muted);margin-bottom:8px;">
+                            Set the balance shown to this user on the portal (display only — real balance unchanged).
+                        </div>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" step="0.01" name="display_balance"
+                                   value="{{ user.influencer_display_balance or 10000 }}"
+                                   class="form-control" placeholder="10000">
+                        </div>
+                        <button type="submit" class="btn btn-sm w-100"
+                                style="background:rgba(212,168,83,.2);color:var(--gyo-gold);border:1px solid rgba(212,168,83,.3);">
+                            <i class="bi bi-star me-1"></i>Enable Influencer Mode
+                        </button>
+                        {% else %}
+                        <div style="font-size:.75rem;color:var(--gyo-muted);margin-bottom:8px;">
+                            Currently showing <strong style="color:var(--gyo-gold);">₱{{ "{:,.2f}".format(user.influencer_display_balance or 10000) }}</strong>
+                            as the portal balance. Update or disable below.
+                        </div>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" step="0.01" name="display_balance"
+                                   value="{{ user.influencer_display_balance or 10000 }}"
+                                   class="form-control">
+                        </div>
+                        <button type="submit" name="display_balance" class="btn btn-sm w-100 mb-1"
+                                style="background:rgba(212,168,83,.2);color:var(--gyo-gold);border:1px solid rgba(212,168,83,.3);">
+                            Update Display Balance
+                        </button>
+                        <button type="submit" formaction="{{ url_for('main.user_influencer_toggle', user_id=user.user_id) }}"
+                                class="btn btn-sm btn-outline-danger w-100">
+                            <i class="bi bi-star me-1"></i>Remove Influencer Status
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
 
                 <hr style="border-color:var(--gyo-border);margin:4px 0;">
 
