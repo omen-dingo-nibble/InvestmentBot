@@ -5,146 +5,237 @@
 <div class="top-bar">
     <div>
         <div style="font-size:1.2rem;font-weight:800;">Invite friends</div>
-        <div style="font-size:.75rem;color:#8896B3;">Share your link. Earn when friends buy their first plan.</div>
+        <div style="font-size:.75rem;color:var(--gyo-muted);">Share your link. Earn when friends invest.</div>
     </div>
     <div class="brand-logo">GY</div>
 </div>
 {% endblock %}
 
 {% block content %}
-<!-- Invite card -->
-{% set ref_link = tg_link %}
-<div class="invite-card">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-        <div style="flex:1;">
-            <div class="ic-label">YOUR INVITE CODE</div>
-            <div class="code-box">
-                <div class="code-text">{{ user.referral_code }}</div>
-                <button class="copy-btn" onclick="copyText('{{ user.referral_code }}', this)">Copy</button>
-            </div>
 
-            <div class="ic-label">TELEGRAM INVITE LINK</div>
-            <div class="link-box">
-                <i class="bi bi-telegram" style="flex-shrink:0;color:#28a8e8;"></i>
-                <span class="link-text">{{ tg_link }}</span>
-                <button class="copy-btn" onclick="copyText('{{ tg_link }}', this)" style="flex-shrink:0;">Copy</button>
-            </div>
+<!-- ── Hero earn strip ───────────────────────────────────────── -->
+<div style="margin:14px 16px 0;background:linear-gradient(135deg,#0c1a3a 0%,#0a2518 100%);border-radius:20px;padding:20px 20px 16px;border:1px solid rgba(29,185,84,.18);">
 
-            {% if web_mirror_links %}
-            <div class="ic-label" style="margin-top:12px;">🌐 WEB INVITE LINKS</div>
-            <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
-                {% for m in web_mirror_links %}
-                <div style="background:var(--gyo-card2);border-radius:12px;border:1px solid var(--gyo-border);padding:10px 12px;display:flex;align-items:center;gap:8px;">
-                    <i class="bi bi-globe2" style="color:var(--gyo-green);flex-shrink:0;"></i>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:.7rem;color:var(--gyo-muted);margin-bottom:1px;">{{ m.label }}</div>
-                        <div class="link-text" style="font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ m.url }}</div>
-                    </div>
-                    <button class="copy-btn" onclick="copyText('{{ m.url }}', this)" style="flex-shrink:0;">Copy</button>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <div class="share-row">
-                <button class="share-btn primary" onclick="shareLink()">
-                    <i class="bi bi-share"></i> Share Telegram link
-                </button>
-                <button class="share-btn secondary" onclick="copyText('{{ tg_link }}', this)">
-                    <i class="bi bi-clipboard"></i> Copy
-                </button>
-            </div>
+    <!-- Bonus badge -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div>
+            <div style="font-size:.68rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Your bonus rate</div>
+            <div style="font-size:2rem;font-weight:900;color:var(--gyo-green);line-height:1;">{{ ref_bonus_pct|int }}%</div>
+            <div style="font-size:.75rem;color:var(--gyo-muted);margin-top:2px;">per friend's investment</div>
         </div>
-        <div style="font-size:3.5rem;margin-left:10px;line-height:1;flex-shrink:0;">🤝</div>
+        {% if first_plan %}
+        <div style="text-align:right;">
+            <div style="font-size:.68rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Example payout</div>
+            <div style="font-size:1.25rem;font-weight:800;color:var(--gyo-gold);">+₱{{ "{:,.2f}".format(first_plan.min_amount * ref_bonus_pct / 100) }}</div>
+            <div style="font-size:.72rem;color:var(--gyo-muted);">when friend buys ₱{{ "{:,.0f}".format(first_plan.min_amount) }} plan</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Invite code row -->
+    <div style="margin-bottom:12px;">
+        <div style="font-size:.68rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Your invite code</div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;">
+            <span style="font-size:1.25rem;font-weight:900;letter-spacing:3px;font-family:monospace;color:var(--gyo-text);flex:1;">{{ user.referral_code }}</span>
+            <button onclick="copyText('{{ user.referral_code }}', this)"
+                    style="background:var(--gyo-green-glow);color:var(--gyo-green);border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:700;cursor:pointer;flex-shrink:0;">
+                Copy
+            </button>
+        </div>
+    </div>
+
+    <!-- Telegram link row -->
+    <div style="margin-bottom:12px;">
+        <div style="font-size:.68rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+            <i class="bi bi-telegram" style="color:#28a8e8;margin-right:4px;"></i>Telegram invite link
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(40,168,232,.07);border-radius:12px;padding:11px 14px;border:1px solid rgba(40,168,232,.15);">
+            <span style="flex:1;font-size:.78rem;color:var(--gyo-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ tg_link }}</span>
+            <button onclick="copyText('{{ tg_link }}', this)"
+                    style="background:rgba(40,168,232,.15);color:#28a8e8;border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:700;cursor:pointer;flex-shrink:0;">
+                Copy
+            </button>
+        </div>
+    </div>
+
+    <!-- Web mirror links -->
+    {% if web_mirror_links %}
+    <div style="margin-bottom:12px;">
+        <div style="font-size:.68rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+            <i class="bi bi-globe2" style="color:var(--gyo-green);margin-right:4px;"></i>Web invite links
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            {% for m in web_mirror_links %}
+            <div style="background:rgba(29,185,84,.06);border-radius:12px;border:1px solid rgba(29,185,84,.12);overflow:hidden;">
+                <!-- Domain label bar -->
+                <div style="padding:7px 14px 0;font-size:.68rem;font-weight:700;color:var(--gyo-green);text-transform:uppercase;letter-spacing:.5px;">
+                    {{ m.label }}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 14px 10px;">
+                    <span style="flex:1;font-size:.75rem;color:var(--gyo-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ m.url }}</span>
+                    <button onclick="copyText('{{ m.url }}', this)"
+                            style="background:var(--gyo-green-glow);color:var(--gyo-green);border:none;border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0;">
+                        Copy
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Share / Copy action buttons -->
+    <div style="display:flex;gap:10px;margin-top:4px;">
+        <button onclick="shareLink()"
+                style="flex:1;background:linear-gradient(135deg,var(--gyo-green-dark),var(--gyo-green));color:#fff;border:none;border-radius:13px;padding:13px;font-size:.88rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <i class="bi bi-share-fill"></i> Share link
+        </button>
+        <button onclick="copyText('{{ tg_link }}', this)"
+                style="flex:0 0 auto;background:rgba(255,255,255,.06);color:var(--gyo-text);border:1px solid var(--gyo-border);border-radius:13px;padding:13px 18px;font-size:.88rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-clipboard"></i> Copy
+        </button>
     </div>
 </div>
 
-<!-- How you earn -->
-<div style="padding:4px 20px 12px;">
+<!-- ── How you earn ──────────────────────────────────────────── -->
+<div style="margin:16px 16px 0;">
     <div style="font-size:.95rem;font-weight:700;margin-bottom:12px;">How you earn</div>
-    <div style="background:#1A2235;border-radius:16px;border:1px solid #2A3450;overflow:hidden;">
-        <div class="chain-row">
-            <div class="chain-node">
-                <div class="cn-avatar you"><i class="bi bi-person-fill" style="color:#fff;"></i></div>
-                <div class="cn-label">You</div>
-            </div>
-            <div class="chain-line"></div>
-            <div class="chain-node">
-                <div class="cn-avatar l1"><i class="bi bi-person-plus-fill" style="color:#fff;"></i></div>
-                <div class="cn-label">Friend</div>
-                <div class="cn-pct">{{ ref_bonus_pct|int }}%</div>
-            </div>
-            <div class="chain-line"></div>
-            <div class="chain-node">
-                <div class="cn-avatar" style="background:rgba(255,255,255,.06);">
-                    <i class="bi bi-person" style="color:#8896B3;"></i>
+
+    <div style="background:var(--gyo-card);border-radius:16px;border:1px solid var(--gyo-border);padding:18px 16px 14px;">
+        <!-- Chain diagram -->
+        <div style="display:flex;align-items:flex-start;gap:0;margin-bottom:16px;">
+
+            <!-- You -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex:0 0 auto;min-width:56px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#1a4a6e,var(--gyo-blue));display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+                    <i class="bi bi-person-fill" style="color:#fff;font-size:1.1rem;"></i>
                 </div>
-                <div class="cn-label">Their friend</div>
-                <div class="cn-pct" style="color:#8896B3;font-size:.75rem;">2%</div>
+                <div style="font-size:.72rem;color:var(--gyo-muted);font-weight:600;">You</div>
             </div>
-            <div class="chain-line"></div>
-            <div class="chain-node">
-                <div class="cn-avatar" style="background:rgba(255,255,255,.04);">
-                    <i class="bi bi-people" style="color:#8896B3;font-size:.8rem;"></i>
+
+            <!-- Connector + label -->
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding-top:21px;">
+                <div style="width:100%;height:2px;background:linear-gradient(90deg,var(--gyo-green-dark),var(--gyo-green));border-radius:1px;"></div>
+                <div style="font-size:.68rem;color:var(--gyo-green);font-weight:700;margin-top:4px;">{{ ref_bonus_pct|int }}%</div>
+            </div>
+
+            <!-- Friend -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex:0 0 auto;min-width:56px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gyo-green-dark),var(--gyo-green));display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+                    <i class="bi bi-person-plus-fill" style="color:#fff;font-size:1.1rem;"></i>
                 </div>
-                <div class="cn-label">Next</div>
-                <div class="cn-pct" style="color:#8896B3;font-size:.75rem;">1%</div>
+                <div style="font-size:.72rem;color:var(--gyo-muted);font-weight:600;">Friend</div>
+            </div>
+
+            <!-- Connector dim -->
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding-top:21px;">
+                <div style="width:100%;height:2px;background:rgba(255,255,255,.08);border-radius:1px;"></div>
+                <div style="font-size:.68rem;color:var(--gyo-muted);font-weight:600;margin-top:4px;">2%</div>
+            </div>
+
+            <!-- Their friend -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex:0 0 auto;min-width:56px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.05);border:1px dashed var(--gyo-border);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+                    <i class="bi bi-person" style="color:var(--gyo-muted);font-size:1rem;"></i>
+                </div>
+                <div style="font-size:.68rem;color:var(--gyo-muted);text-align:center;line-height:1.2;">Their<br>friend</div>
+            </div>
+
+            <!-- Connector dim -->
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding-top:21px;">
+                <div style="width:100%;height:2px;background:rgba(255,255,255,.05);border-radius:1px;"></div>
+                <div style="font-size:.68rem;color:rgba(255,255,255,.2);font-weight:600;margin-top:4px;">1%</div>
+            </div>
+
+            <!-- Next -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex:0 0 auto;min-width:44px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+                    <i class="bi bi-people" style="color:rgba(255,255,255,.2);font-size:.9rem;"></i>
+                </div>
+                <div style="font-size:.68rem;color:rgba(255,255,255,.2);">Next</div>
             </div>
         </div>
 
+        <!-- Example callout -->
         {% if first_plan %}
-        <div style="padding:12px 16px;background:rgba(29,185,84,.05);border-top:1px solid #2A3450;display:flex;align-items:center;gap:10px;">
-            <div style="font-size:1.4rem;">💬</div>
-            <div style="font-size:.8rem;color:#8896B3;line-height:1.5;">
-                When a friend buys their first plan of <strong style="color:#F0F4FF;">₱{{ "{:,.0f}".format(first_plan.min_amount) }}</strong>,
-                you get <strong style="color:#1DB954;">₱{{ "{:,.2f}".format(first_plan.min_amount * ref_bonus_pct / 100) }}</strong>.
-                <br><small>Commission is paid once for each person, on their first plan.</small>
+        <div style="background:rgba(29,185,84,.06);border-radius:12px;border:1px solid rgba(29,185,84,.14);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;">
+            <div style="font-size:1.2rem;line-height:1;margin-top:2px;flex-shrink:0;">💡</div>
+            <div style="font-size:.82rem;color:var(--gyo-muted);line-height:1.6;">
+                A friend buys <strong style="color:var(--gyo-text);">₱{{ "{:,.0f}".format(first_plan.min_amount) }}</strong>
+                → you earn
+                <strong style="color:var(--gyo-green);font-size:.92rem;">₱{{ "{:,.2f}".format(first_plan.min_amount * ref_bonus_pct / 100) }}</strong>
+                instantly. Paid on every plan they purchase.
             </div>
         </div>
         {% endif %}
     </div>
 </div>
 
-<!-- Your commission summary -->
-<div style="padding:0 16px 8px;">
+<!-- ── Your commission stats ─────────────────────────────────── -->
+<div style="margin:16px 16px 0;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div style="font-size:.95rem;font-weight:700;">Your commission</div>
-        <a href="{{ url_for('portal.me') }}" style="font-size:.78rem;color:#1DB954;text-decoration:none;font-weight:600;">Details →</a>
+        <a href="{{ url_for('portal.me') }}"
+           style="font-size:.78rem;color:var(--gyo-green);text-decoration:none;font-weight:600;">Details →</a>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div style="background:#1A2235;border-radius:14px;padding:14px;border:1px solid #2A3450;">
-            <div style="font-size:.72rem;color:#8896B3;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Referrals</div>
-            <div style="font-size:1.4rem;font-weight:800;color:#3B82F6;">{{ ref_info.total }}</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="background:var(--gyo-card);border-radius:14px;padding:14px 12px;border:1px solid var(--gyo-border);text-align:center;">
+            <div style="font-size:.65rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Referrals</div>
+            <div style="font-size:1.6rem;font-weight:900;color:#3B82F6;line-height:1;">{{ ref_info.total }}</div>
         </div>
-        <div style="background:#1A2235;border-radius:14px;padding:14px;border:1px solid #2A3450;">
-            <div style="font-size:.72rem;color:#8896B3;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Earned</div>
-            <div style="font-size:1.1rem;font-weight:800;color:#1DB954;">₱{{ "%.2f"|format(ref_info.bonus) }}</div>
+        <div style="background:var(--gyo-card);border-radius:14px;padding:14px 12px;border:1px solid var(--gyo-border);text-align:center;">
+            <div style="font-size:.65rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Events</div>
+            <div style="font-size:1.6rem;font-weight:900;color:var(--gyo-gold);line-height:1;">{{ ref_info.events }}</div>
+        </div>
+        <div style="background:var(--gyo-card);border-radius:14px;padding:14px 12px;border:1px solid var(--gyo-border);text-align:center;">
+            <div style="font-size:.65rem;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Earned</div>
+            <div style="font-size:1.1rem;font-weight:900;color:var(--gyo-green);line-height:1.1;">₱{{ "{:,.2f}".format(ref_info.bonus) }}</div>
         </div>
     </div>
 </div>
 
-<!-- Referred users list -->
+<!-- ── Referred members list ─────────────────────────────────── -->
 {% if ref_info.referred_users %}
-<div style="padding:4px 16px;">
-    <div style="font-size:.85rem;font-weight:700;margin-bottom:10px;">Referred Members</div>
-    <div style="background:#1A2235;border-radius:14px;border:1px solid #2A3450;overflow:hidden;">
-    {% for u in ref_info.referred_users[:5] %}
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #2A3450;">
-        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#15883D,#1DB954);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem;flex-shrink:0;">
+<div style="margin:16px 16px 0;">
+    <div style="font-size:.88rem;font-weight:700;margin-bottom:10px;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;">Referred members</div>
+    <div style="background:var(--gyo-card);border-radius:16px;border:1px solid var(--gyo-border);overflow:hidden;">
+    {% for u in ref_info.referred_users[:8] %}
+    <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;{% if not loop.last %}border-bottom:1px solid var(--gyo-border);{% endif %}">
+        <!-- Avatar -->
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gyo-green-dark),var(--gyo-green));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.85rem;flex-shrink:0;">
             {{ (u.full_name or u.username or 'U')[0]|upper }}
         </div>
-        <div style="flex:1;">
-            <div style="font-size:.85rem;font-weight:600;">{{ u.full_name or u.username or 'User #' ~ u.user_id }}</div>
-            <div style="font-size:.72rem;color:#8896B3;">Invested ₱{{ "{:,.0f}".format(u.total_invested or 0) }}</div>
+        <!-- Info -->
+        <div style="flex:1;min-width:0;">
+            <div style="font-size:.88rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ u.full_name or u.username or ('User #' ~ u.user_id) }}
+            </div>
+            <div style="font-size:.72rem;color:var(--gyo-muted);margin-top:1px;">
+                Invested ₱{{ "{:,.0f}".format(u.total_invested or 0) }}
+            </div>
         </div>
-        <div style="font-size:.85rem;font-weight:700;color:#1DB954;">+₱{{ "%.2f"|format(u.total_bonus or 0) }}</div>
+        <!-- Bonus earned -->
+        <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:.88rem;font-weight:800;color:var(--gyo-green);">+₱{{ "{:,.2f}".format(u.total_bonus or 0) }}</div>
+            <div style="font-size:.68rem;color:var(--gyo-muted);">bonus</div>
+        </div>
     </div>
     {% endfor %}
     </div>
 </div>
+{% else %}
+<!-- Empty state when no referrals yet -->
+<div style="margin:16px 16px 0;background:var(--gyo-card);border-radius:16px;border:1px solid var(--gyo-border);padding:28px 20px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:10px;">👥</div>
+    <div style="font-size:.92rem;font-weight:700;margin-bottom:6px;">No referrals yet</div>
+    <div style="font-size:.8rem;color:var(--gyo-muted);line-height:1.6;">
+        Share your link above and start earning<br>when friends join and invest.
+    </div>
+</div>
 {% endif %}
 
-<div style="height:20px;"></div>
+<div style="height:24px;"></div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -155,7 +246,7 @@ function shareLink() {
     if (navigator.share) {
         navigator.share({ title: 'Join Gyokuro', text, url }).catch(() => {});
     } else {
-        copyText(url, event.target);
+        copyText(url, event.currentTarget || event.target);
     }
 }
 </script>
