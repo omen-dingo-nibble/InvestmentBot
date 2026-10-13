@@ -75,6 +75,7 @@
                 <!-- Inline balance edit panel -->
                 <div id="balanceEditPanel" class="edit-panel mt-3" style="display:none;">
                     <form method="POST" action="{{ url_for('main.user_adjust_balance', user_id=user.user_id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div style="font-size:.75rem;font-weight:700;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
                             Delta Adjust (+ or -)
                         </div>
@@ -89,6 +90,7 @@
                     </form>
                     <hr style="border-color:var(--gyo-border);">
                     <form method="POST" action="{{ url_for('main.user_edit', user_id=user.user_id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div style="font-size:.75rem;font-weight:700;color:var(--gyo-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
                             Set Exact Values
                         </div>
@@ -200,6 +202,7 @@
                 </button>
                 <div id="pwResetPanel" class="edit-panel" style="display:none;">
                     <form method="POST" action="{{ url_for('main.user_reset_password', user_id=user.user_id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div class="input-group input-group-sm mb-2">
                             <input type="text" name="new_password" class="form-control"
                                    placeholder="New password (min 6 chars)" required minlength="6">
@@ -277,6 +280,7 @@
                 </button>
                 <div id="newTxPanel" class="edit-panel" style="display:none;">
                     <form method="POST" action="{{ url_for('main.transaction_create', user_id=user.user_id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div class="row g-1 mb-1">
                             <div class="col-6">
                                 <select name="tx_type" class="form-select form-select-sm">
@@ -318,6 +322,7 @@
                 </button>
                 <div id="newInvPanel" class="edit-panel" style="display:none;">
                     <form method="POST" action="{{ url_for('main.investment_create', user_id=user.user_id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <input type="text" name="plan_name" class="form-control form-control-sm mb-1"
                                placeholder="Plan name" value="Custom Plan" required>
                         <div class="row g-1 mb-1">
@@ -421,6 +426,7 @@
                         </button>
                         <form method="POST" action="{{ url_for('main.transaction_delete', user_id=user.user_id, tx_id=tx.id) }}"
                               onsubmit="return confirm('Delete transaction #{{ tx.id }}? This cannot be undone.')">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm" style="padding:2px 7px;background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);"
                                     title="Delete">
                                 <i class="bi bi-trash"></i>
@@ -433,6 +439,7 @@
             <tr id="txEdit{{ tx.id }}" style="display:none;background:var(--gyo-surface);">
                 <td colspan="8" style="padding:14px 16px;">
                     <form method="POST" action="{{ url_for('main.transaction_edit', user_id=user.user_id, tx_id=tx.id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div class="row g-2 align-items-end">
                             <div class="col-sm-2">
                                 <label class="edit-label">Type</label>
@@ -560,6 +567,7 @@
                         </button>
                         <form method="POST" action="{{ url_for('main.investment_delete', user_id=user.user_id, inv_id=inv.id) }}"
                               onsubmit="return confirm('Delete investment #{{ inv.id }}?')">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm" style="padding:2px 7px;background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);"
                                     title="Delete">
                                 <i class="bi bi-trash"></i>
@@ -572,6 +580,7 @@
             <tr id="invEdit{{ inv.id }}" style="display:none;background:var(--gyo-surface);">
                 <td colspan="10" style="padding:14px 16px;">
                     <form method="POST" action="{{ url_for('main.investment_edit', user_id=user.user_id, inv_id=inv.id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div class="row g-2 align-items-end">
                             <div class="col-sm-3">
                                 <label class="edit-label">Plan Name</label>

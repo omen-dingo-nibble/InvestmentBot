@@ -72,12 +72,14 @@
                 <i class="bi bi-pencil me-1"></i>編集
             </a>
             <form method="POST" action="{{ url_for('main.plan_toggle', plan_id=plan.id) }}" class="flex-grow-1">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm w-100 {{ 'btn-outline-danger' if plan.is_active else 'btn-outline-success' }}">
                     {{ '無効化' if plan.is_active else '有効化' }}
                 </button>
             </form>
             <form method="POST" action="{{ url_for('main.plan_delete', plan_id=plan.id) }}"
                   onsubmit="return confirm('Delete {{ plan.name }}?')">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
         </div>

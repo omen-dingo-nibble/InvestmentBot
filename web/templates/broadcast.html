@@ -12,6 +12,7 @@
         <div class="card">
             <div class="card-body">
                 <form method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-4">
                         <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">メッセージ内容</label>
                         <textarea name="message" class="form-control" rows="8"

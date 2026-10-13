@@ -56,12 +56,14 @@
                     {% if d.status == 'pending' %}
                     <form method="POST" action="{{ url_for('main.deposit_approve', tx_id=d.id) }}"
                           class="d-inline" onsubmit="return confirm('Approve #{{ d.id }}?')">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm py-0 me-1" style="background:rgba(82,183,136,.15);color:var(--gyo-green);border:1px solid rgba(82,183,136,.3);">
                             <i class="bi bi-check-lg"></i>
                         </button>
                     </form>
                     <form method="POST" action="{{ url_for('main.deposit_reject', tx_id=d.id) }}"
                           class="d-inline" onsubmit="return confirm('Reject #{{ d.id }}?')">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm py-0" style="background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.25);">
                             <i class="bi bi-x-lg"></i>
                         </button>

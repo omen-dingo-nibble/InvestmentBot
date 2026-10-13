@@ -161,7 +161,10 @@ def dashboard():
 def users():
     db = get_db()
     search = request.args.get("q", "").strip()
-    page = max(1, int(request.args.get("page", 1)))
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
     per_page = 25
     if search:
         all_users = db.search_users(search)
@@ -324,10 +327,10 @@ def influencer_create():
     return render_template("influencer_create.html", admin=get_current_admin())
 
 
-
+@bp.route("/users/<sint:user_id>/adjust", methods=["POST"])
 @login_required
 @csrf_protect
-def user_adjust_balance(user_id: int):
+def user_adjust_balance(user_id: int):def user_adjust_balance(user_id: int):
     db = get_db()
     user = db.get_user(user_id)
     if not user:
@@ -839,7 +842,10 @@ def investment_create(user_id: int):
 def deposits():
     db = get_db()
     status_filter = request.args.get("status", "pending")
-    page = max(1, int(request.args.get("page", 1)))
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
     per_page = 25
     if status_filter == "all":
         items = db.list_transactions(tx_type="deposit", limit=per_page, offset=(page - 1) * per_page)
@@ -935,7 +941,10 @@ def deposit_reject(tx_id: int):
 def withdrawals():
     db = get_db()
     status_filter = request.args.get("status", "pending")
-    page = max(1, int(request.args.get("page", 1)))
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
     per_page = 25
     if status_filter == "all":
         items = db.list_transactions(tx_type="withdrawal", limit=per_page, offset=(page - 1) * per_page)
@@ -1310,7 +1319,10 @@ def broadcast():
 @login_required
 def audit_logs():
     db = get_db()
-    page = max(1, int(request.args.get("page", 1)))
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
     per_page = 50
     total = db.count_audit_logs()
     logs = db.list_audit_logs(limit=per_page, offset=(page - 1) * per_page)
@@ -1336,6 +1348,10 @@ def audit_logs():
 def account():
     db = get_db()
     admin = get_current_admin()
+    if not admin:
+        session.clear()
+        flash("Your admin session expired. Please log in again.", "warning")
+        return redirect(url_for("main.login"))
     if request.method == "POST":
         current_pw = request.form.get("current_password", "")
         new_pw = request.form.get("new_password", "")
