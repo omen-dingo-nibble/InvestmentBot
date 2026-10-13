@@ -286,6 +286,57 @@ def create_app() -> Flask:
             ), 429
         return render_template("login.html", error="Too many requests. Try again shortly."), 429
 
+    # ── Generic error handlers ───────────────────────────────────────
+    @app.errorhandler(403)
+    def forbidden_handler(e):
+        log.warning("403 Forbidden: %s %s from %s — %s",
+                    request.method, request.path, request.remote_addr, e)
+        if request.path.startswith("/app/"):
+            return render_template(
+                "portal/login.html",
+                bot_username="GyokuroBot",
+                error="Access denied. Please try again.",
+                mode="login",
+            ), 403
+        return render_template("login.html", error="Access denied. Please try again."), 403
+
+    @app.errorhandler(404)
+    def not_found_handler(e):
+        if request.path.startswith("/app/"):
+            return render_template(
+                "portal/login.html",
+                bot_username="GyokuroBot",
+                error="Page not found.",
+                mode="login",
+            ), 404
+        return render_template("login.html", error="Page not found."), 404
+
+    @app.errorhandler(500)
+    def server_error_handler(e):
+        log.exception("500 Internal Server Error: %s %s from %s",
+                      request.method, request.path, request.remote_addr)
+        if request.path.startswith("/app/"):
+            return render_template(
+                "portal/login.html",
+                bot_username="GyokuroBot",
+                error="An unexpected error occurred. Please try again.",
+                mode="login",
+            ), 500
+        return render_template("login.html", error="An unexpected error occurred. Please try again."), 500
+
+    @app.errorhandler(Exception)
+    def unhandled_exception(e):
+        log.exception("Unhandled exception: %s %s from %s — %s",
+                      request.method, request.path, request.remote_addr, e)
+        if request.path.startswith("/app/"):
+            return render_template(
+                "portal/login.html",
+                bot_username="GyokuroBot",
+                error="An unexpected error occurred. Please try again.",
+                mode="login",
+            ), 500
+        return render_template("login.html", error="An unexpected error occurred. Please try again."), 500
+
     return app
 
 

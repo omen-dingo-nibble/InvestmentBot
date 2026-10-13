@@ -221,18 +221,22 @@ def user_ban(user_id: int):
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for("main.users"))
-    new_status = not user["is_banned"]
-    db.set_ban(user_id, new_status)
-    action = "ban_user" if new_status else "unban_user"
-    db.log_audit(
-        action=action,
-        admin_id=session.get("admin_id"),
-        admin_name=session.get("admin_name"),
-        target_type="user",
-        target_id=str(user_id),
-        ip_address=request.remote_addr,
-    )
-    flash(f"User {'banned' if new_status else 'unbanned'}.", "success")
+    try:
+        new_status = not user["is_banned"]
+        db.set_ban(user_id, new_status)
+        action = "ban_user" if new_status else "unban_user"
+        db.log_audit(
+            action=action,
+            admin_id=session.get("admin_id"),
+            admin_name=session.get("admin_name"),
+            target_type="user",
+            target_id=str(user_id),
+            ip_address=request.remote_addr,
+        )
+        flash(f"User {'banned' if new_status else 'unbanned'}.", "success")
+    except Exception as e:
+        log.exception("Error toggling ban for user %s: %s", user_id, e)
+        flash("Server error — could not update ban status.", "danger")
     return redirect(url_for("main.user_detail", user_id=user_id))
 
 
@@ -330,7 +334,7 @@ def influencer_create():
 @bp.route("/users/<sint:user_id>/adjust", methods=["POST"])
 @login_required
 @csrf_protect
-def user_adjust_balance(user_id: int):def user_adjust_balance(user_id: int):
+def user_adjust_balance(user_id: int):
     db = get_db()
     user = db.get_user(user_id)
     if not user:
@@ -342,28 +346,32 @@ def user_adjust_balance(user_id: int):def user_adjust_balance(user_id: int):
         flash("Invalid amount.", "danger")
         return redirect(url_for("main.user_detail", user_id=user_id))
     note = request.form.get("note", "Web admin adjustment").strip() or "Web admin adjustment"
-    result = db.update_balance(user_id, amount)
-    if result is None:
-        flash("Adjustment would produce negative balance.", "danger")
-    else:
-        db.create_transaction(
-            user_id=user_id,
-            tx_type="adjustment",
-            amount=amount,
-            status="completed",
-            note=note,
-            admin_id=session.get("admin_id"),
-        )
-        db.log_audit(
-            action="adjust_balance",
-            admin_id=session.get("admin_id"),
-            admin_name=session.get("admin_name"),
-            target_type="user",
-            target_id=str(user_id),
-            details=f"Adjusted by {amount:+.2f}. Note: {note}",
-            ip_address=request.remote_addr,
-        )
-        flash(f"Balance adjusted by {amount:+.2f}.", "success")
+    try:
+        result = db.update_balance(user_id, amount)
+        if result is None:
+            flash("Adjustment would produce negative balance.", "danger")
+        else:
+            db.create_transaction(
+                user_id=user_id,
+                tx_type="adjustment",
+                amount=amount,
+                status="completed",
+                note=note,
+                admin_id=session.get("admin_id"),
+            )
+            db.log_audit(
+                action="adjust_balance",
+                admin_id=session.get("admin_id"),
+                admin_name=session.get("admin_name"),
+                target_type="user",
+                target_id=str(user_id),
+                details=f"Adjusted by {amount:+.2f}. Note: {note}",
+                ip_address=request.remote_addr,
+            )
+            flash(f"Balance adjusted by {amount:+.2f}.", "success")
+    except Exception as e:
+        log.exception("Error adjusting balance for user %s: %s", user_id, e)
+        flash("Server error — balance adjustment failed.", "danger")
     return redirect(url_for("main.user_detail", user_id=user_id))
 
 

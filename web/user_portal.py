@@ -140,6 +140,7 @@ def get_portal_user():
 
 @portal.route("/login", methods=["GET", "POST"])
 @limiter.limit("15 per minute; 60 per hour", error_message="Too many login attempts.")
+@csrf_protect
 def portal_login_page():
     if "portal_user_id" in session:
         return redirect(url_for("portal.home"))
@@ -185,6 +186,7 @@ def portal_login_page():
 
 @portal.route("/register", methods=["GET", "POST"])
 @limiter.limit("5 per minute; 20 per hour", error_message="Too many registrations from this IP.")
+@csrf_protect
 def portal_register():
     if "portal_user_id" in session:
         return redirect(url_for("portal.home"))
@@ -416,6 +418,7 @@ def plans():
 @portal.route("/invest", methods=["GET", "POST"])
 @portal_login_required
 @csrf_protect
+@limiter.limit("10 per minute; 50 per hour", error_message="Too many investment requests.")
 def invest():
     db = get_db()
     user = get_portal_user()
@@ -755,6 +758,7 @@ def api_investments():
 @portal.route("/deposit", methods=["GET", "POST"])
 @portal_login_required
 @csrf_protect
+@limiter.limit("10 per minute; 30 per hour", error_message="Too many deposit requests.")
 def deposit():
     db = get_db()
     user = get_portal_user()
@@ -871,6 +875,7 @@ def deposit():
 @portal.route("/withdraw", methods=["GET", "POST"])
 @portal_login_required
 @csrf_protect
+@limiter.limit("10 per minute; 20 per hour", error_message="Too many withdrawal requests.")
 def withdraw():
     db = get_db()
     user = get_portal_user()
@@ -911,20 +916,47 @@ def withdraw():
                 elif amount_val > real_balance:
                     error = f"Insufficient balance. Your balance is ₱{balance:,.2f}."
                 else:
-                    # Atomic deduct — update_balance returns None if it would go negative
-                    updated = db.update_balance(user["user_id"], -amount_val)
-                    if updated is None:
-                        error = "Insufficient balance (concurrent request detected)."
-                    else:
-                        tx_id = db.create_transaction(
-                            user_id=user["user_id"],
-                            tx_type="withdrawal",
-                            amount=-amount_val,
-                            currency="PHP",
-                            crypto_currency=crypto,
-                            wallet_address=wallet_addr,
-                            note=f"Web withdrawal request to {wallet_addr[:16]}…",
-                        )
+                    # Atomic deduct + record — both succeed or both fail
+                    updated = None
+                    tx_id = None
+                    try:
+                        with db._lock:
+                            db._conn.execute("BEGIN")
+                            updated_row = db.query_one(
+                                "SELECT balance FROM users WHERE user_id = ?",
+                                (user["user_id"],)
+                            )
+                            if not updated_row or float(updated_row["balance"]) < amount_val:
+                                db._conn.execute("ROLLBACK")
+                                error = "Insufficient balance (concurrent request detected)."
+                            else:
+                                new_bal = round(float(updated_row["balance"]) - amount_val, 8)
+                                db._conn.execute(
+                                    "UPDATE users SET balance = ?, updated_at = ? WHERE user_id = ?",
+                                    (new_bal, int(time.time()), user["user_id"]),
+                                )
+                                import sqlite3 as _sq
+                                cur = db._conn.execute(
+                                    """INSERT INTO transactions
+                                       (user_id, tx_type, amount, currency, crypto_currency,
+                                        wallet_address, status, note, created_at, updated_at)
+                                       VALUES (?, 'withdrawal', ?, 'PHP', ?, ?, 'pending', ?, ?, ?)""",
+                                    (user["user_id"], -amount_val, crypto, wallet_addr,
+                                     f"Web withdrawal request to {wallet_addr[:16]}…",
+                                     int(time.time()), int(time.time())),
+                                )
+                                tx_id = cur.lastrowid
+                                db._conn.execute("COMMIT")
+                                updated = db.get_user(user["user_id"])
+                    except Exception as _exc:
+                        try:
+                            db._conn.execute("ROLLBACK")
+                        except Exception:
+                            pass
+                        log.exception("Withdrawal DB error for user %s: %s", user["user_id"], _exc)
+                        error = "A server error occurred. Please try again."
+
+                    if tx_id and updated:
                         db.log_user_session(
                             user_id=user["user_id"],
                             action="withdrawal_submitted",
@@ -936,8 +968,7 @@ def withdraw():
                             f"Withdrawal of ₱{amount_val:,.2f} submitted (#{tx_id}). "
                             f"It will be processed within 24 hours."
                         )
-                        # Refresh balance for template
-                        fresh_user = db.get_user(user["user_id"])
+                        fresh_user = updated
                         balance = float(fresh_user["balance"]) if fresh_user else 0.0
             except (ValueError, TypeError):
                 error = "Please enter a valid amount."
