@@ -404,12 +404,13 @@ def main() -> None:
     import threading
     web_app = create_app()
     web_host = os.environ.get("WEB_HOST", "0.0.0.0")
-    web_port = int(os.environ.get("WEB_PORT", "5000"))
+    # Railway injects PORT; fall back to WEB_PORT then 5000
+    web_port = int(os.environ.get("PORT") or os.environ.get("WEB_PORT") or "5000")
 
     def run_web():
         from werkzeug.serving import make_server
         srv = make_server(web_host, web_port, web_app, threaded=True)
-        log.info("Web admin panel running at http://%s:%d", web_host, web_port)
+        log.info("Web panel running at http://%s:%d", web_host, web_port)
         srv.serve_forever()
 
     web_thread = threading.Thread(target=run_web, daemon=True)

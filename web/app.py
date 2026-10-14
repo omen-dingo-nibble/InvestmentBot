@@ -53,13 +53,22 @@ log = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 
 # ---------------------------------------------------------------------------
-# Rate limiter (in-memory store — fine for single-process)
+# Rate limiter — uses Redis on Railway (REDIS_URL env var), memory fallback
 # ---------------------------------------------------------------------------
+
+def _make_storage_uri() -> str:
+    """Return Redis URI if available (Railway injects REDIS_URL), else memory."""
+    redis_url = os.environ.get("REDIS_URL", "").strip()
+    if redis_url:
+        log.info("Rate limiter: using Redis at %s", redis_url[:30] + "…")
+        return redis_url
+    return "memory://"
+
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=[],          # no global limit; apply selectively
-    storage_uri="memory://",
+    default_limits=[],          # no global limit; apply selectively per route
+    storage_uri=_make_storage_uri(),
     strategy="fixed-window",
 )
 
@@ -149,13 +158,29 @@ def create_app() -> Flask:
         )
     app.secret_key = secret
 
+    # ── Railway / reverse-proxy trust ───────────────────────────────
+    # Railway terminates TLS at the edge and forwards requests over HTTP
+    # internally. Trust one hop of X-Forwarded-For / X-Forwarded-Proto
+    # so rate-limiter IPs and url_for() scheme are correct.
+    _on_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT", "").strip())
+    if _on_railway or os.environ.get("TRUST_PROXY", "").lower() in ("1", "true", "yes"):
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+        log.info("ProxyFix enabled (Railway / reverse-proxy mode)")
+
+    # Auto-enable Secure cookies when behind Railway HTTPS proxy
+    _is_https = (
+        _on_railway
+        or os.environ.get("SESSION_COOKIE_SECURE", "").lower() == "true"
+        or os.environ.get("HTTPS", "").lower() in ("1", "true", "on")
+    )
+
     # ── Session cookie hardening ─────────────────────────────────────
     app.config.update(
         PERMANENT_SESSION_LIFETIME=86400,           # 24 hours
         SESSION_COOKIE_HTTPONLY=True,               # no JS access
         SESSION_COOKIE_SAMESITE="Lax",              # CSRF mitigation
-        # Set SESSION_COOKIE_SECURE=True in production (requires HTTPS)
-        SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true",
+        SESSION_COOKIE_SECURE=_is_https,            # auto-true on Railway
         SESSION_COOKIE_NAME="gyo_sess",             # avoid default "session"
         MAX_CONTENT_LENGTH=16 * 1024 * 1024,        # 16 MB max upload
     )
@@ -208,8 +233,8 @@ def create_app() -> Flask:
             "form-action 'self';"
         )
         response.headers["Content-Security-Policy"] = csp
-        # HSTS — enable in production when serving HTTPS
-        if os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true":
+        # HSTS — Railway always serves HTTPS; enable when secure flag is on
+        if _is_https:
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains; preload"
             )

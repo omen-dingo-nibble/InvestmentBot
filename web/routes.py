@@ -357,7 +357,6 @@ def user_adjust_balance(user_id: int):
                 amount=amount,
                 status="completed",
                 note=note,
-                admin_id=session.get("admin_id"),
             )
             db.log_audit(
                 action="adjust_balance",
@@ -644,7 +643,6 @@ def transaction_create(user_id: int):
         wallet_address=f.get("wallet_address", "").strip() or None,
         tx_hash=f.get("tx_hash", "").strip() or None,
         note=f.get("note", "").strip() or f"Admin-injected by {session.get('admin_name')}",
-        admin_id=session.get("admin_id"),
     )
 
     # Optionally apply balance delta when status=completed
