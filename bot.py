@@ -400,24 +400,48 @@ def main() -> None:
     # Eagerly initialise DB so seeding errors show up at startup
     get_db()
 
-    # Start the Flask web panel in a background thread
-    import threading
-    web_app = create_app()
     web_host = os.environ.get("WEB_HOST", "0.0.0.0")
     # Railway injects PORT; fall back to WEB_PORT then 5000
     web_port = int(os.environ.get("PORT") or os.environ.get("WEB_PORT") or "5000")
 
-    def run_web():
-        from werkzeug.serving import make_server
-        srv = make_server(web_host, web_port, web_app, threaded=True)
-        log.info("Web panel running at http://%s:%d", web_host, web_port)
-        srv.serve_forever()
+    # ── Start Flask FIRST so Railway's health check gets a response ──
+    # Railway sends an HTTP probe to $PORT almost immediately after the
+    # process starts. If nothing is bound yet it returns 502. We start
+    # the web server in a thread and give it a moment to bind before
+    # we start the (blocking) Telegram bot.
+    import threading, socket, time as _time
 
-    web_thread = threading.Thread(target=run_web, daemon=True)
+    web_app = create_app()
+
+    def run_web():
+        try:
+            from werkzeug.serving import make_server
+            srv = make_server(web_host, web_port, web_app, threaded=True)
+            log.info("Web panel bound to %s:%d", web_host, web_port)
+            srv.serve_forever()
+        except Exception as exc:
+            log.exception("Web server crashed: %s", exc)
+
+    web_thread = threading.Thread(target=run_web, daemon=True, name="web-server")
     web_thread.start()
 
+    # Wait until the port is actually open (max 10 s) before starting the bot.
+    # This prevents the bot from consuming all startup time while Railway
+    # probes the port and receives connection-refused.
+    deadline = _time.time() + 10
+    while _time.time() < deadline:
+        try:
+            with socket.create_connection((web_host if web_host != "0.0.0.0" else "127.0.0.1",
+                                           web_port), timeout=0.5):
+                log.info("Web server is ready on port %d", web_port)
+                break
+        except OSError:
+            _time.sleep(0.1)
+    else:
+        log.warning("Web server did not become ready within 10 s — continuing anyway")
+
+    # ── Now start the Telegram bot ────────────────────────────────────
     app = build_application()
-    # Register the background job that auto-completes expired investments
     register_scheduler(app)
     log.info("Bot is up. Admin IDs: %s", CONFIG.admin_ids)
     app.run_polling(allowed_updates=Update.ALL_TYPES)

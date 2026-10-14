@@ -4,6 +4,6 @@ builder = "nixpacks"
 [deploy]
 startCommand = "python bot.py"
 healthcheckPath = "/admin/login"
-healthcheckTimeout = 30
+healthcheckTimeout = 60
 restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 5
+restartPolicyMaxRetries = 10
