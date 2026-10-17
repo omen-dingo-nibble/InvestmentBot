@@ -181,7 +181,7 @@ def create_app() -> Flask:
         SESSION_COOKIE_HTTPONLY=True,               # no JS access
         SESSION_COOKIE_SAMESITE="Lax",              # CSRF mitigation
         SESSION_COOKIE_SECURE=_is_https,            # auto-true on Railway
-        SESSION_COOKIE_NAME="gyo_sess",             # avoid default "session"
+        SESSION_COOKIE_NAME="iet_sess",             # avoid default "session"
         MAX_CONTENT_LENGTH=16 * 1024 * 1024,        # 16 MB max upload
     )
 
@@ -252,6 +252,7 @@ def create_app() -> Flask:
             "app_name": BRAND_NAME,
             "brand_tagline": BRAND_TAGLINE,
             "brand_website": BRAND_WEBSITE,
+            "bot_username": "italiaelitetradingbot",
             "csrf_token": _csrf_token,          # callable — use {{ csrf_token() }}
         }
 
@@ -302,10 +303,11 @@ def create_app() -> Flask:
     # ── Rate-limit error handler ─────────────────────────────────────
     @app.errorhandler(429)
     def ratelimit_handler(e):
+        _bot_u = get_db().get_setting("bot_username", "italiaelitetradingbot") if True else "italiaelitetradingbot"
         if request.path.startswith("/app/"):
             return render_template(
                 "portal/login.html",
-                bot_username="GyokuroBot",
+                bot_username=_bot_u,
                 error="Too many requests. Please wait a minute and try again.",
                 mode="login",
             ), 429
@@ -316,10 +318,11 @@ def create_app() -> Flask:
     def forbidden_handler(e):
         log.warning("403 Forbidden: %s %s from %s — %s",
                     request.method, request.path, request.remote_addr, e)
+        _bot_u = get_db().get_setting("bot_username", "italiaelitetradingbot") if True else "italiaelitetradingbot"
         if request.path.startswith("/app/"):
             return render_template(
                 "portal/login.html",
-                bot_username="GyokuroBot",
+                bot_username=_bot_u,
                 error="Access denied. Please try again.",
                 mode="login",
             ), 403
@@ -327,10 +330,11 @@ def create_app() -> Flask:
 
     @app.errorhandler(404)
     def not_found_handler(e):
+        _bot_u = get_db().get_setting("bot_username", "italiaelitetradingbot") if True else "italiaelitetradingbot"
         if request.path.startswith("/app/"):
             return render_template(
                 "portal/login.html",
-                bot_username="GyokuroBot",
+                bot_username=_bot_u,
                 error="Page not found.",
                 mode="login",
             ), 404
@@ -340,10 +344,11 @@ def create_app() -> Flask:
     def server_error_handler(e):
         log.exception("500 Internal Server Error: %s %s from %s",
                       request.method, request.path, request.remote_addr)
+        _bot_u = get_db().get_setting("bot_username", "italiaelitetradingbot") if True else "italiaelitetradingbot"
         if request.path.startswith("/app/"):
             return render_template(
                 "portal/login.html",
-                bot_username="GyokuroBot",
+                bot_username=_bot_u,
                 error="An unexpected error occurred. Please try again.",
                 mode="login",
             ), 500
@@ -353,10 +358,11 @@ def create_app() -> Flask:
     def unhandled_exception(e):
         log.exception("Unhandled exception: %s %s from %s — %s",
                       request.method, request.path, request.remote_addr, e)
+        _bot_u = get_db().get_setting("bot_username", "italiaelitetradingbot") if True else "italiaelitetradingbot"
         if request.path.startswith("/app/"):
             return render_template(
                 "portal/login.html",
-                bot_username="GyokuroBot",
+                bot_username=_bot_u,
                 error="An unexpected error occurred. Please try again.",
                 mode="login",
             ), 500

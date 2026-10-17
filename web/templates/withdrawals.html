@@ -1,13 +1,17 @@
 {% extends "base.html" %}
-{% block title %}出金管理{% endblock %}
+{% block title %}Withdrawals{% endblock %}
+{% block topbar_title %}Withdrawals{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-arrow-up-circle me-2 text-green"></i>出金管理 Withdrawals</h4>
+    <div>
+        <h4><i class="bi bi-arrow-up-circle me-2 text-gold"></i>Withdrawal Management</h4>
+        <div class="page-sub">{{ total }} transactions — {{ status_filter }}</div>
+    </div>
     <div class="d-flex gap-2 flex-wrap">
         {% for s in ['pending', 'completed', 'rejected', 'all'] %}
         <a href="{{ url_for('main.withdrawals', status=s) }}"
-           class="btn btn-sm {{ 'btn-gold' if status_filter == s else 'btn-outline-secondary' }}">
+           class="btn btn-sm {{ 'btn-primary' if status_filter == s else 'btn-outline-secondary' }}">
             {{ s.capitalize() }}
         </a>
         {% endfor %}
@@ -15,15 +19,12 @@
 </div>
 
 <div class="card">
-    <div class="card-header">
-        {{ total }} 件 — <em style="color:var(--gyo-muted);">{{ status_filter }}</em>
-    </div>
     <div class="table-responsive">
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>#</th><th>ユーザー</th><th>金額</th>
-                    <th>Wallet Address</th><th>Status</th><th>日時</th><th>操作</th>
+                    <th>#</th><th>User</th><th>Amount</th>
+                    <th>Method</th><th>Payout To</th><th>Status</th><th>Date</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -32,34 +33,44 @@
                 <td><code>#{{ w.id }}</code></td>
                 <td>
                     <a href="{{ url_for('main.user_detail', user_id=w.user_id) }}"
-                       style="color:var(--gyo-light);text-decoration:none;">
+                       style="color:var(--text-primary);text-decoration:none;">
                         {{ w._user.full_name or w._user.username or w.user_id if w._user else w.user_id }}
                     </a>
                 </td>
                 <td><strong class="text-green">{{ w.amount | money }}</strong></td>
                 <td>
+                    {% set note = w.note or '' %}
+                    {% if 'GCash' in note %}
+                    <span class="badge badge-active">📱 GCash</span>
+                    {% elif 'Maya' in note %}
+                    <span class="badge badge-processing">💜 Maya</span>
+                    {% else %}
+                    <span class="badge badge-pending">₿ Crypto</span>
+                    {% endif %}
+                </td>
+                <td>
                     {% if w.wallet_address %}
-                    <code class="small">{{ w.wallet_address[:22] }}…</code>
-                    <button class="btn btn-link btn-sm p-0 ms-1" style="color:var(--gyo-muted);"
+                    <code class="small">{{ w.wallet_address[:22] }}{% if w.wallet_address|length > 22 %}…{% endif %}</code>
+                    <button class="btn btn-link btn-sm p-0 ms-1 text-muted"
                             onclick="navigator.clipboard.writeText('{{ w.wallet_address }}')"
                             title="Copy"><i class="bi bi-clipboard"></i></button>
-                    {% else %}<span style="color:var(--gyo-muted);">—</span>{% endif %}
+                    {% else %}<span class="text-muted">—</span>{% endif %}
                 </td>
                 <td><span class="badge badge-{{ w.status }}">{{ w.status }}</span></td>
-                <td><small style="color:var(--gyo-muted);">{{ w.created_at | ts_to_date }}</small></td>
+                <td><small class="text-muted">{{ w.created_at | ts_to_date }}</small></td>
                 <td>
                     {% if w.status == 'pending' %}
                     <form method="POST" action="{{ url_for('main.withdrawal_approve', tx_id=w.id) }}"
                           class="d-inline" onsubmit="return confirm('Mark #{{ w.id }} as paid?')">
                         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-sm py-0 me-1" style="background:rgba(82,183,136,.15);color:var(--gyo-green);border:1px solid rgba(82,183,136,.3);">
+                        <button class="btn btn-sm btn-success py-0 px-2 me-1">
                             <i class="bi bi-check-lg"></i> Paid
                         </button>
                     </form>
                     <form method="POST" action="{{ url_for('main.withdrawal_reject', tx_id=w.id) }}"
                           class="d-inline" onsubmit="return confirm('Reject #{{ w.id }} and refund?')">
                         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-sm py-0" style="background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.25);">
+                        <button class="btn btn-sm btn-outline-danger py-0 px-2">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </form>
@@ -67,7 +78,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="7" class="text-center py-4" style="color:var(--gyo-muted);">データなし</td></tr>
+            <tr><td colspan="8" class="text-center py-4 text-muted">No withdrawals found.</td></tr>
             {% endfor %}
             </tbody>
         </table>

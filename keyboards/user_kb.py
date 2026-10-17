@@ -68,3 +68,24 @@ def cancel_keyboard(cancel_cb: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("❌ Cancel", callback_data=cancel_cb)],
     ])
+
+
+def withdraw_method_keyboard(
+    gcash_on: bool, maya_on: bool, crypto_on: bool, cancel_cb: str
+) -> InlineKeyboardMarkup:
+    """Show available withdrawal method buttons based on admin toggles."""
+    rows = []
+    if gcash_on:
+        rows.append([InlineKeyboardButton(
+            "📱 GCash (phone-linked)", callback_data=f"{CB['withdraw_method']}GCASH"
+        )])
+    if maya_on:
+        rows.append([InlineKeyboardButton(
+            "💜 Maya (phone-linked)", callback_data=f"{CB['withdraw_method']}MAYA"
+        )])
+    if crypto_on:
+        rows.append([InlineKeyboardButton(
+            "₿ Crypto wallet", callback_data=f"{CB['withdraw_method']}CRYPTO"
+        )])
+    rows.append([InlineKeyboardButton("⬅️ Cancel", callback_data=cancel_cb)])
+    return InlineKeyboardMarkup(rows)

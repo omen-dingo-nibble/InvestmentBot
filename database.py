@@ -1,4 +1,4 @@
-"""SQLite persistence layer.
+﻿"""SQLite persistence layer.
 
 The bot uses a small set of tables that cover every business concept:
 users, deposit/withdrawal transactions, investment plans, the user's
@@ -338,6 +338,23 @@ class Database:
                         "Invest in our premium tea-inspired plans and watch your money grow every day.\n\n"
                         "Use the buttons below to get started."
                     ),
+                    # Crypto deposit channel toggles (1 = enabled, 0 = disabled)
+                    "crypto_btc_enabled": "1",
+                    "crypto_eth_enabled": "1",
+                    "crypto_usdt_trc20_enabled": "1",
+                    "crypto_usdt_erc20_enabled": "1",
+                    "crypto_ltc_enabled": "1",
+                    # E-wallet withdrawal toggles
+                    "gcash_enabled": "0",
+                    "maya_enabled": "0",
+                    # GCash / Maya admin QR images (filenames relative to web/static/qr/)
+                    "qr_gcash": "",
+                    "qr_maya": "",
+                    # GCash / Maya account numbers shown to depositing users
+                    "gcash_account_number": "",
+                    "gcash_account_name": "",
+                    "maya_account_number": "",
+                    "maya_account_name": "",
                 }
                 for k, v in defaults.items():
                     self._conn.execute(
@@ -1389,3 +1406,4 @@ def get_db() -> Database:
     if _DB is None:
         _DB = Database(CONFIG.db_path)
     return _DB
+

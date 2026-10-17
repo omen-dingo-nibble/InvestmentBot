@@ -1,33 +1,37 @@
 {% extends "base.html" %}
-{% block title %}一斉送信{% endblock %}
+{% block title %}Broadcast{% endblock %}
+{% block topbar_title %}Broadcast{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-megaphone me-2 text-green"></i>一斉送信 Broadcast</h4>
-    <small style="color:var(--gyo-muted);">全ユーザーへメッセージ送信</small>
+    <div>
+        <h4><i class="bi bi-megaphone me-2 text-accent"></i>Broadcast Message</h4>
+        <div class="page-sub">Send a message to all bot users</div>
+    </div>
 </div>
 
 <div class="row">
     <div class="col-lg-7">
         <div class="card">
+            <div class="card-header"><i class="bi bi-send me-2"></i>Compose Message</div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-4">
-                        <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">メッセージ内容</label>
+                        <label class="form-label">Message Content</label>
                         <textarea name="message" class="form-control" rows="8"
-                                  placeholder="お知らせを入力…&#10;&#10;Telegram Markdown対応: *太字*, _斜体_, `コード`"
+                                  placeholder="Type your announcement here…&#10;&#10;Telegram Markdown: *bold*, _italic_, `code`"
                                   required></textarea>
-                        <small style="color:var(--gyo-muted);font-size:.75rem;">
-                            Markdown: <code>*bold*</code> <code>_italic_</code> <code>`code`</code>
+                        <small class="text-muted" style="font-size:.73rem;">
+                            Supports Telegram Markdown: <code>*bold*</code> <code>_italic_</code> <code>`code`</code>
                         </small>
                     </div>
-                    <div class="alert alert-warning py-2" style="font-size:.83rem;">
-                        <i class="bi bi-exclamation-triangle me-1"></i>
-                        <strong>全ユーザー</strong>に送信されます。Botが起動中の場合のみ配信されます。
+                    <div class="alert alert-warning d-flex align-items-center gap-2" style="font-size:.82rem;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        This will be sent to <strong>all users</strong>. The bot must be running.
                     </div>
-                    <button type="submit" class="btn btn-gold px-4">
-                        <i class="bi bi-send me-2"></i>送信 Send Broadcast
+                    <button type="submit" class="btn btn-primary px-4 mt-3">
+                        <i class="bi bi-send me-2"></i>Send Broadcast
                     </button>
                 </form>
             </div>
@@ -35,13 +39,13 @@
     </div>
     <div class="col-lg-5 mt-3 mt-lg-0">
         <div class="card">
-            <div class="card-header"><i class="bi bi-lightbulb me-2"></i>ヒント Tips</div>
-            <div class="card-body" style="color:var(--gyo-muted);font-size:.83rem;">
-                <ul class="mb-0 ps-3">
-                    <li class="mb-2">簡潔でプロフェッショナルなメッセージを心がけてください。</li>
-                    <li class="mb-2">プランの更新・メンテナンス・新機能のお知らせに使用してください。</li>
-                    <li class="mb-2">大人数への配信は数分かかる場合があります。</li>
-                    <li>Botが<strong style="color:var(--gyo-text);">起動中</strong>でないと配信されません。</li>
+            <div class="card-header"><i class="bi bi-lightbulb me-2 text-gold"></i>Tips</div>
+            <div class="card-body text-muted" style="font-size:.83rem;">
+                <ul class="mb-0 ps-3" style="line-height:2;">
+                    <li>Keep messages concise and professional.</li>
+                    <li>Use for plan updates, maintenance notices, or announcements.</li>
+                    <li>Large user bases may take a few minutes to deliver.</li>
+                    <li>The bot must be <strong style="color:var(--text-primary);">running</strong> for delivery.</li>
                 </ul>
             </div>
         </div>

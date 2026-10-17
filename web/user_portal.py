@@ -1,4 +1,4 @@
-"""User-facing investment portal for Gyokuro.
+﻿"""User-facing investment portal for Gyokuro.
 
 Users log in via a one-time link sent to them by the Telegram bot (/weblogin).
 After the link is consumed the user_id is stored in the session.
@@ -113,7 +113,7 @@ def portal_login_required(f):
         if db.get_setting("maintenance_mode", False):
             return render_template(
                 "portal/login.html",
-                bot_username=db.get_setting("bot_username", "GyokuroBot"),
+                bot_username=db.get_setting("bot_username", "italiaelitetradingbot"),
                 error="The platform is currently under maintenance. Please check back soon.",
                 mode="login",
             ), 503
@@ -146,7 +146,7 @@ def portal_login_page():
         return redirect(url_for("portal.home"))
 
     db = get_db()
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
     error = None
 
     if request.method == "POST":
@@ -192,7 +192,7 @@ def portal_register():
         return redirect(url_for("portal.home"))
 
     db = get_db()
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
     error = None
     success = None
 
@@ -270,7 +270,7 @@ def portal_auth():
     db = get_db()
     user_id = db.consume_web_login_token(token)
     if not user_id:
-        flash("This login link has expired or already been used. Use /weblogin in Telegram to get a new one.", "danger")
+        flash("This login link has expired or already been used. Request a new one or sign in with your phone number.", "danger")
         return redirect(url_for("portal.portal_login_page"))
 
     user = db.get_user(user_id)
@@ -374,7 +374,7 @@ def home():
     ref_bonus_pct = float(db.get_setting("referral_bonus_percent", 5.0))
 
     # Bot username for links
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
 
     return render_template(
         "portal/home.html",
@@ -401,7 +401,7 @@ def plans():
     db = get_db()
     user = get_portal_user()
     all_plans = db.list_plans(active_only=True)
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
 
     # Enrich with total return calculation
     for p in all_plans:
@@ -424,7 +424,7 @@ def invest():
     user = get_portal_user()
     fresh_user = db.get_user(user["user_id"])
     real_balance = float(fresh_user["balance"]) if fresh_user else 0.0
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
     all_plans = db.list_plans(active_only=True)
 
     # Enrich plans
@@ -568,7 +568,7 @@ def rewards():
 
     ref_info = db.referral_stats(user["user_id"])
     ref_bonus_pct = float(db.get_setting("referral_bonus_percent", 5.0))
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
 
     # Check-in history (last 7 days of earning txs as proxy)
     today_start = int(datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
@@ -605,7 +605,7 @@ def invite():
     user = get_portal_user()
     ref_info = db.referral_stats(user["user_id"])
     ref_bonus_pct = float(db.get_setting("referral_bonus_percent", 5.0))
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
     min_plan = db.list_plans(active_only=True)
     first_plan = min_plan[0] if min_plan else None
 
@@ -674,7 +674,7 @@ def me():
     ref_info = db.referral_stats(user["user_id"])
     min_wd = float(db.get_setting("min_withdrawal_usd", 5.0))
     min_dep = float(db.get_setting("min_deposit_usd", 500.0))
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
     support = db.get_setting("support_handle", "@GyokuroSupport")
 
     # Withdrawal readiness
@@ -762,7 +762,7 @@ def api_investments():
 def deposit():
     db = get_db()
     user = get_portal_user()
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
 
     # Fetch wallet addresses and QR codes
     crypto_wallets = {
@@ -879,7 +879,7 @@ def deposit():
 def withdraw():
     db = get_db()
     user = get_portal_user()
-    bot_username = db.get_setting("bot_username", "GyokuroBot")
+    bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
 
     min_wd = float(db.get_setting("min_withdrawal_usd", 5.0))
     usd_rate = float(db.get_setting("usd_to_php_rate", 56.0))
@@ -983,3 +983,4 @@ def withdraw():
         error=error,
         success=success,
     )
+

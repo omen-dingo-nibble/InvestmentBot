@@ -23,7 +23,8 @@ class State(IntEnum):
 
     # Withdrawal flow
     WITHDRAW_ENTER_AMOUNT = 30
-    WITHDRAW_ENTER_ADDRESS = 31
+    WITHDRAW_SELECT_METHOD = 31   # GCash / Maya / Crypto picker
+    WITHDRAW_ENTER_ADDRESS = 33   # crypto address (kept for crypto path)
     WITHDRAW_CONFIRM = 32
 
     # Admin flows
@@ -51,6 +52,7 @@ CB = {
     "invest": "I:0",
     "invest_plan": "I:P:",  # I:P:3
     "withdraw": "W:0",
+    "withdraw_method": "W:M:",  # W:M:GCASH | W:M:MAYA | W:M:CRYPTO
     "referral": "R:0",
     "history": "H:0",
     "my_investments": "MI:0",

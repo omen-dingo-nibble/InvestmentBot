@@ -84,6 +84,7 @@ from handlers.user import (
     withdraw_confirm,
     withdraw_enter_address,
     withdraw_enter_amount,
+    withdraw_select_method,
     withdraw_start,
 )
 from utils.states import CB, State
@@ -148,6 +149,8 @@ async def callback_router(update: Update, context):
         return await invest_select_plan(update, context)
     if data == CB["withdraw"]:
         return await withdraw_start(update, context)
+    if data.startswith(CB["withdraw_method"]):
+        return await withdraw_select_method(update, context)
     if data == CB["referral"]:
         return await referral(update, context)
     if data == CB["history"]:
@@ -274,6 +277,10 @@ def build_application() -> Application:
     withdraw_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(withdraw_start, pattern=f"^{CB['withdraw']}$")],
         states={
+            State.WITHDRAW_SELECT_METHOD: [
+                CallbackQueryHandler(withdraw_select_method, pattern=f"^{CB['withdraw_method']}"),
+                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
+            ],
             State.WITHDRAW_ENTER_AMOUNT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_enter_amount),
                 CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),

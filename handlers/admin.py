@@ -554,9 +554,16 @@ async def admin_withdrawals(
     lines = [f"💸 *Pending withdrawals* ({len(items)})\n"]
     for tx in items:
         u = db.get_user(tx["user_id"])
+        note = tx.get("note") or ""
+        if "GCash" in note:
+            method = "📱 GCash"
+        elif "Maya" in note:
+            method = "💜 Maya"
+        else:
+            method = "₿ Crypto"
         lines.append(
             f"`#{tx['id']}` {fmt_user(u) if u else tx['user_id']}\n"
-            f"  amount: *${tx['amount']:.2f}* · addr: `{tx.get('wallet_address') or '-'}`"
+            f"  amount: *${tx['amount']:.2f}* · {method} → `{tx.get('wallet_address') or '-'}`"
         )
     await query.edit_message_text(
         truncate("\n".join(lines), 3800),
@@ -579,11 +586,20 @@ async def admin_withdrawal_view(
         await query.answer("Not found.", show_alert=True)
         return -1
     user = db.get_user(tx["user_id"])
+    # Detect payment method from the note field
+    note = tx.get("note") or ""
+    if "GCash" in note:
+        method_line = "Method: *GCash 📱*\n"
+    elif "Maya" in note:
+        method_line = "Method: *Maya 💜*\n"
+    else:
+        method_line = "Method: *Crypto ₿*\n"
     text = (
         f"💸 *Withdrawal `#{tx['id']}`*\n\n"
         f"User: {fmt_user(user) if user else tx['user_id']}\n"
         f"Amount: *${tx['amount']:.2f} {tx['currency']}*\n"
-        f"Address: `{tx.get('wallet_address') or '-'}`\n"
+        f"{method_line}"
+        f"Payout to: `{tx.get('wallet_address') or '-'}`\n"
         f"Status: *{tx['status']}*\n"
         f"Created: {fmt_short_date(tx['created_at'])}"
     )
@@ -622,12 +638,19 @@ async def admin_withdrawal_decide(
         db.update_transaction(tx_id, "completed", admin_id=update.effective_user.id,
                               note="Paid out by admin")
         await query.answer("Marked as paid.", show_alert=True)
+        note = tx.get("note") or ""
+        if "GCash" in note:
+            payout_info = f"to your GCash number `{tx.get('wallet_address', '')}`"
+        elif "Maya" in note:
+            payout_info = f"to your Maya number `{tx.get('wallet_address', '')}`"
+        else:
+            payout_info = "to your crypto wallet"
         try:
             await context.bot.send_message(
                 chat_id=tx["user_id"],
                 text=(
-                    f"✅ Your withdrawal `#{tx_id}` of *${abs(tx['amount']):.2f}* "
-                    f"has been paid. Check your wallet."
+                    f"✅ Your withdrawal `#{tx_id}` of *₱{abs(tx['amount']):.2f}* "
+                    f"has been paid {payout_info}."
                 ),
                 parse_mode="Markdown",
             )

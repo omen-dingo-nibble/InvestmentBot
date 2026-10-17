@@ -1,4 +1,4 @@
-"""``/start``, ``/weblogin`` and top-level navigation — sign-up bonus + craving withdrawal."""
+﻿"""``/start``, ``/weblogin`` and top-level navigation — sign-up bonus + craving withdrawal."""
 from __future__ import annotations
 
 import logging
@@ -249,3 +249,5 @@ async def weblogin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         disable_web_page_preview=True,
     )
     return -1
+
+

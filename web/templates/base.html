@@ -1,483 +1,709 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}管理{% endblock %} | 玉露 Gyokuro</title>
+    <title>{% block title %}Dashboard{% endblock %} — Gyokuro Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        /* ── Gyokuro Admin — Japanese Matcha Palette ─────────────────────
-           深緑 Deep green:  #1a3a2a
-           抹茶 Matcha:      #2d6a4f
-           若草 Lime accent: #52b788
-           墨   Ink dark:    #0a0f0d
-           和紙 Washi:       #111a14
-           枯草 Surface:     #172118
-           竹   Border:      #253b2c
-        ──────────────────────────────────────────────────────────────────── */
+        /* ╔══════════════════════════════════════════════════════════════╗
+           ║  Gyokuro — Modern Dark Admin Panel             ║
+           ║  UIverse-inspired glass-morphism + accent system            ║
+           ╚══════════════════════════════════════════════════════════════╝ */
         :root {
-            --gyo-ink:       #0a0f0d;
-            --gyo-dark:      #0d1410;
-            --gyo-washi:     #111a14;
-            --gyo-surface:   #172118;
-            --gyo-card:      #1c2a1f;
-            --gyo-border:    #253b2c;
-            --gyo-matcha:    #2d6a4f;
-            --gyo-green:     #52b788;
-            --gyo-light:     #74c69d;
-            --gyo-glow:      rgba(82,183,136,.15);
-            --gyo-text:      #e8f5ec;
-            --gyo-muted:     #6b8f74;
-            --gyo-gold:      #d4a853;
-            --sidebar-w:     260px;
+            --bg-base:       #080c14;
+            --bg-surface:    #0d1117;
+            --bg-card:       #111827;
+            --bg-card-hover: #141f2e;
+            --bg-input:      #0d1117;
+            --border:        rgba(255,255,255,.07);
+            --border-bright: rgba(255,255,255,.12);
+            --accent:        #3b82f6;
+            --accent-dark:   #2563eb;
+            --accent-glow:   rgba(59,130,246,.18);
+            --accent-green:  #10b981;
+            --accent-gold:   #f59e0b;
+            --accent-red:    #ef4444;
+            --accent-purple: #8b5cf6;
+            --text-primary:  #f1f5f9;
+            --text-secondary:#94a3b8;
+            --text-muted:    #475569;
+            --sidebar-w:     256px;
+            --radius-sm:     8px;
+            --radius-md:     12px;
+            --radius-lg:     16px;
         }
 
-        * { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
 
         body {
-            background: var(--gyo-ink);
-            color: var(--gyo-text);
-            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
             min-height: 100vh;
         }
 
-        /* ── Sidebar ── */
+        /* ── Sidebar ──────────────────────────────────────────────── */
         .sidebar {
             position: fixed; top: 0; left: 0;
             width: var(--sidebar-w); height: 100vh;
-            overflow-y: auto;
-            background: var(--gyo-washi);
-            border-right: 1px solid var(--gyo-border);
+            overflow-y: auto; overflow-x: hidden;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
             z-index: 1000;
             display: flex; flex-direction: column;
-            transition: transform .3s;
+            transition: transform .25s cubic-bezier(.4,0,.2,1);
         }
 
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+        /* ── Brand ── */
         .sidebar-brand {
-            padding: 1.2rem 1.4rem 1rem;
-            border-bottom: 1px solid var(--gyo-border);
-            display: flex; align-items: center; gap: 12px;
-        }
-
-        .brand-mark {
-            width: 42px; height: 42px;
-            background: linear-gradient(135deg, var(--gyo-matcha), var(--gyo-green));
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
+            padding: 20px 18px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 11px;
             flex-shrink: 0;
-            box-shadow: 0 0 16px var(--gyo-glow);
         }
 
-        .brand-mark span {
-            font-size: .7rem; font-weight: 800; color: #fff;
-            letter-spacing: .5px; line-height: 1.2; text-align: center;
+        /* Bamboo Panda SVG logo mark */
+        .brand-logo {
+            width: 40px; height: 40px; flex-shrink: 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1a2f1a, #2d5a2d);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 4px 16px rgba(0,0,0,.4);
+            position: relative; overflow: hidden;
         }
 
-        .brand-text .brand-name {
-            font-size: .95rem; font-weight: 800;
-            color: var(--gyo-light); line-height: 1.1;
+        .brand-logo::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,.06) 0%, transparent 60%);
         }
 
-        .brand-text .brand-jp {
-            font-size: .68rem; color: var(--gyo-muted);
-            letter-spacing: 1px;
+        /* Inline panda SVG inside the logo */
+        .brand-logo svg {
+            width: 26px; height: 26px; position: relative; z-index: 1;
         }
 
-        .nav-group-label {
-            padding: .5rem 1.4rem .2rem;
-            font-size: .62rem;
-            color: var(--gyo-muted);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-            margin-top: .6rem;
+        .brand-info { min-width: 0; }
+        .brand-name {
+            font-size: .9rem; font-weight: 800; color: var(--text-primary);
+            line-height: 1.1; letter-spacing: -.2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        .brand-sub {
+            font-size: .67rem; color: var(--text-muted); letter-spacing: .4px;
+            text-transform: uppercase; margin-top: 1px;
+        }
+
+        /* ── Nav groups ── */
+        .nav-section-label {
+            padding: 14px 18px 4px;
+            font-size: .65rem; font-weight: 700;
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .sidebar ul { list-style: none; padding: 0 10px; }
 
         .sidebar .nav-link {
-            color: #7fad8a;
-            padding: .5rem 1.4rem;
-            border-radius: 8px;
-            margin: .08rem .7rem;
-            font-size: .835rem;
-            font-weight: 500;
-            display: flex; align-items: center; gap: .6rem;
-            transition: all .15s;
+            display: flex; align-items: center; gap: 9px;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            margin: 1px 0;
+            color: var(--text-secondary);
             text-decoration: none;
+            font-size: .83rem; font-weight: 500;
+            transition: color .15s, background .15s;
+            position: relative;
         }
 
-        .sidebar .nav-link i { font-size: .95rem; }
+        .sidebar .nav-link i {
+            font-size: .95rem; flex-shrink: 0;
+            width: 18px; text-align: center;
+        }
 
         .sidebar .nav-link:hover {
-            color: var(--gyo-light);
-            background: rgba(82,183,136,.08);
+            color: var(--text-primary);
+            background: rgba(255,255,255,.05);
         }
 
         .sidebar .nav-link.active {
-            color: var(--gyo-light);
-            background: rgba(82,183,136,.14);
-            border-left: 3px solid var(--gyo-green);
-            padding-left: calc(1.4rem - 3px);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .sidebar .nav-link.active::before {
+            content: '';
+            position: absolute; left: 0; top: 4px; bottom: 4px;
+            width: 3px; border-radius: 0 2px 2px 0;
+            background: var(--accent);
+        }
+
+        .sidebar .nav-link .badge-dot {
+            margin-left: auto;
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent-gold);
+            flex-shrink: 0;
         }
 
         .sidebar-footer {
-            margin-top: auto;
-            padding: .9rem 1.4rem;
-            border-top: 1px solid var(--gyo-border);
-            font-size: .75rem;
-            color: var(--gyo-muted);
+            margin-top: auto; flex-shrink: 0;
+            padding: 14px 18px;
+            border-top: 1px solid var(--border);
         }
 
-        .sidebar-footer strong { color: var(--gyo-text); font-size: .8rem; }
+        .sidebar-footer .admin-row {
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .sidebar-footer .admin-avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            font-size: .75rem; font-weight: 700; color: #fff; flex-shrink: 0;
+        }
+
+        .sidebar-footer .admin-name {
+            font-size: .78rem; font-weight: 600; color: var(--text-primary);
+        }
+        .sidebar-footer .admin-role {
+            font-size: .67rem; color: var(--text-muted);
+        }
 
         /* ── Main content ── */
         .main-content {
             margin-left: var(--sidebar-w);
-            padding: 1.6rem 2rem;
             min-height: 100vh;
+            padding: 0;
+            display: flex; flex-direction: column;
         }
 
+        /* Top bar */
+        .topbar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(8,12,20,.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px;
+        }
+
+        .topbar .mobile-toggle {
+            display: none;
+            background: none; border: 1px solid var(--border);
+            color: var(--text-secondary); border-radius: var(--radius-sm);
+            padding: 5px 9px; cursor: pointer;
+        }
+
+        .topbar-title {
+            font-size: .9rem; font-weight: 600; color: var(--text-primary);
+        }
+
+        .topbar-right {
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .topbar-badge {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.25);
+            color: var(--accent-green); border-radius: 20px;
+            padding: 3px 10px; font-size: .72rem; font-weight: 600;
+        }
+
+        .topbar-badge .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .35; }
+        }
+
+        .content-wrap {
+            padding: 24px 28px;
+            flex: 1;
+        }
+
+        /* ── Page header ── */
         .page-header {
-            display: flex; align-items: center;
+            display: flex; align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 1.6rem;
-            padding-bottom: .75rem;
-            border-bottom: 1px solid var(--gyo-border);
+            margin-bottom: 20px;
+            flex-wrap: wrap; gap: 10px;
         }
 
-        .page-header h4 {
-            color: var(--gyo-text); font-weight: 700; margin: 0;
+        .page-header h4, .page-header h5 {
+            font-size: 1.1rem; font-weight: 700;
+            color: var(--text-primary); margin: 0;
+        }
+
+        .page-header .page-sub {
+            font-size: .78rem; color: var(--text-muted); margin-top: 2px;
         }
 
         /* ── Cards ── */
         .card {
-            background: var(--gyo-card);
-            border: 1px solid var(--gyo-border);
-            border-radius: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
         }
 
         .card-header {
             background: transparent;
-            border-bottom: 1px solid var(--gyo-border);
-            padding: .85rem 1.25rem;
-            font-weight: 600;
-            font-size: .875rem;
-            color: var(--gyo-text);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 18px;
+            font-weight: 600; font-size: .85rem;
+            color: var(--text-primary);
+            display: flex; align-items: center; gap: 8px;
         }
+
+        .card-body { padding: 18px; }
 
         .card-footer {
             background: transparent;
-            border-top: 1px solid var(--gyo-border);
-            padding: .75rem 1.25rem;
+            border-top: 1px solid var(--border);
+            padding: 12px 18px;
         }
 
         /* ── Stat cards ── */
         .stat-card {
-            background: var(--gyo-surface);
-            border: 1px solid var(--gyo-border);
-            border-radius: 12px;
-            padding: 1.2rem 1.4rem;
-            transition: border-color .2s;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            position: relative; overflow: hidden;
+            transition: border-color .2s, transform .2s;
         }
 
-        .stat-card:hover { border-color: var(--gyo-matcha); }
+        .stat-card:hover {
+            border-color: var(--border-bright);
+            transform: translateY(-1px);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: var(--card-accent, var(--accent));
+            opacity: .6;
+        }
 
         .stat-card .stat-icon {
-            width: 42px; height: 42px; border-radius: 10px;
+            width: 38px; height: 38px; border-radius: 9px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; margin-bottom: .7rem;
+            font-size: 1.05rem; margin-bottom: 12px;
+            background: var(--icon-bg, rgba(59,130,246,.12));
+            color: var(--icon-color, var(--accent));
         }
 
         .stat-card .stat-value {
-            font-size: 1.55rem; font-weight: 800;
-            line-height: 1.1; margin-bottom: .2rem;
+            font-size: 1.5rem; font-weight: 800; line-height: 1;
+            margin-bottom: 4px; color: var(--text-primary);
         }
 
         .stat-card .stat-label {
-            font-size: .7rem; color: var(--gyo-muted);
-            text-transform: uppercase; letter-spacing: .7px; font-weight: 600;
+            font-size: .7rem; font-weight: 600;
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px;
+        }
+
+        .stat-card .stat-trend {
+            position: absolute; top: 14px; right: 14px;
+            font-size: .72rem; font-weight: 600;
         }
 
         /* ── Tables ── */
-        .table { color: var(--gyo-text); }
+        .table { color: var(--text-primary); margin: 0; }
 
-        .table th {
-            color: var(--gyo-muted); font-size: .73rem;
-            text-transform: uppercase; letter-spacing: .5px;
-            font-weight: 600; border-color: var(--gyo-border);
-            padding: .6rem 1rem;
+        .table thead th {
+            color: var(--text-muted);
+            font-size: .7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .6px;
+            border-color: var(--border);
+            padding: 10px 14px;
+            background: rgba(255,255,255,.02);
         }
 
         .table td {
-            border-color: var(--gyo-border);
-            padding: .65rem 1rem; vertical-align: middle;
+            border-color: var(--border);
+            padding: 10px 14px;
+            vertical-align: middle;
+            font-size: .83rem;
         }
 
-        .table-hover tbody tr:hover {
-            background: rgba(82,183,136,.04);
-        }
+        .table tbody tr { transition: background .1s; }
+        .table tbody tr:hover { background: rgba(255,255,255,.025); }
 
         /* ── Badges ── */
-        .badge-pending   { background: #c07a1a; color: #fff; }
-        .badge-completed { background: var(--gyo-matcha); color: #fff; }
-        .badge-rejected  { background: #8b2020; color: #fff; }
-        .badge-active    { background: #1a4a6e; color: #fff; }
-        .badge-cancelled { background: var(--gyo-muted); color: #fff; }
+        .badge {
+            font-size: .67rem; font-weight: 700;
+            letter-spacing: .3px; padding: 3px 8px; border-radius: 20px;
+        }
+
+        .badge-pending   { background: rgba(245,158,11,.15); color: var(--accent-gold); border: 1px solid rgba(245,158,11,.25); }
+        .badge-completed { background: rgba(16,185,129,.15);  color: var(--accent-green); border: 1px solid rgba(16,185,129,.25); }
+        .badge-rejected  { background: rgba(239,68,68,.12);   color: #f87171;             border: 1px solid rgba(239,68,68,.2); }
+        .badge-active    { background: rgba(59,130,246,.15);  color: var(--accent);       border: 1px solid rgba(59,130,246,.25); }
+        .badge-cancelled { background: rgba(100,116,139,.12); color: var(--text-muted);   border: 1px solid rgba(100,116,139,.2); }
+        .badge-processing{ background: rgba(139,92,246,.15);  color: var(--accent-purple); border: 1px solid rgba(139,92,246,.25); }
 
         /* ── Forms ── */
+        .form-label {
+            font-size: .75rem; font-weight: 600; color: var(--text-muted);
+            letter-spacing: .3px; margin-bottom: 6px;
+        }
+
         .form-control, .form-select {
-            background: var(--gyo-surface);
-            border-color: var(--gyo-border);
-            color: var(--gyo-text);
-            border-radius: 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-bright);
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            font-size: .83rem; padding: 8px 12px;
+            transition: border-color .15s, box-shadow .15s;
         }
 
         .form-control:focus, .form-select:focus {
-            background: var(--gyo-surface);
-            border-color: var(--gyo-green);
-            color: var(--gyo-text);
-            box-shadow: 0 0 0 .2rem rgba(82,183,136,.2);
+            background: var(--bg-input);
+            border-color: var(--accent);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            outline: none;
         }
 
-        .form-control::placeholder { color: var(--gyo-muted); }
+        .form-control::placeholder { color: var(--text-muted); }
 
         .input-group-text {
-            background: var(--gyo-card);
-            border-color: var(--gyo-border);
-            color: var(--gyo-muted);
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--border-bright);
+            color: var(--text-muted);
+            border-radius: var(--radius-sm);
+            font-size: .83rem;
         }
 
         .form-check-input:checked {
-            background-color: var(--gyo-green);
-            border-color: var(--gyo-green);
+            background-color: var(--accent);
+            border-color: var(--accent);
         }
+
+        textarea.form-control { resize: vertical; min-height: 80px; }
 
         /* ── Buttons ── */
-        .btn-gold {
-            background: linear-gradient(135deg, var(--gyo-matcha), var(--gyo-green));
-            color: #fff; border: none; font-weight: 600;
+        .btn { font-size: .8rem; font-weight: 600; border-radius: var(--radius-sm); transition: all .15s; }
+
+        .btn-primary {
+            background: var(--accent); border-color: var(--accent); color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--accent-dark); border-color: var(--accent-dark); color: #fff;
+            box-shadow: 0 4px 12px var(--accent-glow);
         }
 
+        .btn-gold {
+            background: linear-gradient(135deg, #d97706, var(--accent-gold));
+            border: none; color: #fff;
+        }
         .btn-gold:hover {
-            background: linear-gradient(135deg, var(--gyo-green), var(--gyo-light));
-            color: #fff;
+            background: linear-gradient(135deg, var(--accent-gold), #fbbf24);
+            color: #fff; box-shadow: 0 4px 12px rgba(245,158,11,.25);
+        }
+
+        .btn-success {
+            background: var(--accent-green); border-color: var(--accent-green); color: #fff;
+        }
+        .btn-success:hover {
+            background: #059669; border-color: #059669; color: #fff;
+        }
+
+        .btn-danger {
+            background: var(--accent-red); border-color: var(--accent-red); color: #fff;
+        }
+
+        .btn-outline-secondary {
+            border-color: var(--border-bright); color: var(--text-secondary);
+            background: transparent;
+        }
+        .btn-outline-secondary:hover {
+            background: rgba(255,255,255,.06); color: var(--text-primary);
+            border-color: var(--border-bright);
+        }
+
+        .btn-outline-danger {
+            border-color: rgba(239,68,68,.4); color: #f87171; background: transparent;
+        }
+        .btn-outline-danger:hover {
+            background: rgba(239,68,68,.1); color: #f87171; border-color: rgba(239,68,68,.6);
+        }
+
+        .btn-outline-success {
+            border-color: rgba(16,185,129,.4); color: var(--accent-green); background: transparent;
+        }
+        .btn-outline-success:hover {
+            background: rgba(16,185,129,.1); color: var(--accent-green);
         }
 
         .btn-outline-gold {
-            border-color: var(--gyo-green); color: var(--gyo-green);
+            border-color: rgba(245,158,11,.4); color: var(--accent-gold); background: transparent;
+        }
+        .btn-outline-gold:hover {
+            background: rgba(245,158,11,.1); color: var(--accent-gold);
         }
 
-        .btn-outline-gold:hover {
-            background: var(--gyo-green); color: #fff;
+        /* ── Alerts ── */
+        .alert { border-radius: var(--radius-sm); font-size: .83rem; padding: 10px 14px; }
+        .alert-success { background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.25); color: #34d399; }
+        .alert-danger   { background: rgba(239,68,68,.1);  border: 1px solid rgba(239,68,68,.25);  color: #f87171; }
+        .alert-warning  { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.25); color: var(--accent-gold); }
+        .alert-info     { background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.25); color: #60a5fa; }
+
+        /* ── Code ── */
+        code {
+            background: rgba(255,255,255,.06); padding: 1px 6px;
+            border-radius: 4px; font-size: .8em; color: #93c5fd;
         }
 
         /* ── Pagination ── */
         .page-link {
-            background: var(--gyo-surface);
-            border-color: var(--gyo-border);
-            color: var(--gyo-text);
+            background: var(--bg-card); border-color: var(--border);
+            color: var(--text-secondary); font-size: .8rem; padding: 5px 10px;
         }
-
         .page-link:hover {
-            background: var(--gyo-card);
-            border-color: var(--gyo-border);
-            color: var(--gyo-light);
+            background: var(--bg-card-hover); border-color: var(--border-bright); color: var(--text-primary);
         }
-
         .page-item.active .page-link {
-            background: var(--gyo-matcha);
-            border-color: var(--gyo-matcha);
+            background: var(--accent); border-color: var(--accent); color: #fff;
+        }
+        .page-item.disabled .page-link { color: var(--text-muted); }
+
+        /* ── Utility ── */
+        .text-accent   { color: var(--accent) !important; }
+        .text-green    { color: var(--accent-green) !important; }
+        .text-gold     { color: var(--accent-gold) !important; }
+        .text-danger   { color: var(--accent-red) !important; }
+        .text-muted    { color: var(--text-muted) !important; }
+        .text-secondary{ color: var(--text-secondary) !important; }
+
+        .border-accent { border-color: var(--accent) !important; }
+
+        .font-mono { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; }
+
+        /* ── Loading shimmer for stat cards ── */
+        @keyframes shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
 
-        /* ── Alerts ── */
-        .alert { border-radius: 10px; }
-
-        .alert-success {
-            background: rgba(82,183,136,.12);
-            border-color: rgba(82,183,136,.3);
-            color: #74c69d;
-        }
-
-        .alert-danger {
-            background: rgba(220,53,69,.1);
-            border-color: rgba(220,53,69,.25);
-            color: #f87171;
-        }
-
-        .alert-warning {
-            background: rgba(212,168,83,.1);
-            border-color: rgba(212,168,83,.25);
-            color: var(--gyo-gold);
-        }
-
-        .alert-info {
-            background: rgba(82,183,136,.08);
-            border-color: rgba(82,183,136,.2);
-            color: #74c69d;
-        }
-
-        /* ── Misc ── */
-        code {
-            background: rgba(255,255,255,.06);
-            padding: .1rem .4rem;
-            border-radius: 4px;
-            font-size: .82em;
-            color: var(--gyo-light);
-        }
-
-        .text-gold { color: var(--gyo-gold) !important; }
-        .text-green { color: var(--gyo-green) !important; }
-        .border-gold { border-color: var(--gyo-green) !important; }
-
-        /* Japanese decorative divider */
-        .jp-divider {
-            border: none;
-            border-top: 1px solid var(--gyo-border);
-            position: relative;
-            text-align: center;
-            margin: 1rem 0;
-        }
-
-        .jp-divider::after {
-            content: '茶';
-            position: absolute;
-            top: -10px; left: 50%;
-            transform: translateX(-50%);
-            background: var(--gyo-card);
-            padding: 0 8px;
-            color: var(--gyo-muted);
-            font-size: .7rem;
-        }
-
-        /* Mobile */
+        /* ── Mobile ── */
         @media (max-width: 991.98px) {
             .sidebar { transform: translateX(-100%); }
-            .sidebar.show { transform: translateX(0); }
-            .main-content { margin-left: 0; padding: 1rem; }
+            .sidebar.open { transform: translateX(0); box-shadow: 0 0 60px rgba(0,0,0,.7); }
+            .main-content { margin-left: 0; }
+            .topbar .mobile-toggle { display: flex; align-items: center; }
+            .content-wrap { padding: 16px; }
         }
 
-        /* Scrollbar */
+        /* ── Scrollbar ── */
         ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: var(--gyo-ink); }
-        ::-webkit-scrollbar-thumb { background: var(--gyo-border); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--gyo-matcha); }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
+
+        /* ── Smooth entrance animation ── */
+        .fade-in {
+            animation: fadeIn .3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+
 <!-- ── Sidebar ──────────────────────────────────────────────────── -->
 <nav class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <div class="brand-mark">
-            <span style="font-size:1.4rem;line-height:1;">🐼</span>
+        <!-- Bamboo Panda logo mark -->
+        <div class="brand-logo">
+            <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Bamboo stalk -->
+                <rect x="11" y="1" width="3" height="22" rx="1.5" fill="#4ade80" opacity=".85"/>
+                <rect x="11" y="7" width="3" height="1.5" rx=".75" fill="#86efac"/>
+                <rect x="11" y="13" width="3" height="1.5" rx=".75" fill="#86efac"/>
+                <rect x="11" y="18" width="3" height="1.5" rx=".75" fill="#86efac"/>
+                <!-- Bamboo leaves -->
+                <path d="M14 6 Q20 4 19 9 Q14 8 14 6Z" fill="#4ade80" opacity=".7"/>
+                <path d="M11 12 Q5 10 6 15 Q11 14 11 12Z" fill="#4ade80" opacity=".7"/>
+                <path d="M14 17 Q21 15 20 20 Q14 19 14 17Z" fill="#4ade80" opacity=".7"/>
+                <!-- Panda face — white -->
+                <circle cx="13" cy="8.5" r="4.5" fill="#e2e8f0" opacity=".95"/>
+                <!-- Ear patches (dark) -->
+                <circle cx="9.8" cy="5.2" r="1.5" fill="#1e293b"/>
+                <circle cx="16.2" cy="5.2" r="1.5" fill="#1e293b"/>
+                <!-- Eye patches (dark) -->
+                <ellipse cx="11.2" cy="8.2" rx="1.1" ry="1.2" fill="#1e293b"/>
+                <ellipse cx="14.8" cy="8.2" rx="1.1" ry="1.2" fill="#1e293b"/>
+                <!-- Eyes (white glint) -->
+                <circle cx="11.2" cy="8.2" r=".4" fill="white"/>
+                <circle cx="14.8" cy="8.2" r=".4" fill="white"/>
+                <!-- Nose + smile -->
+                <ellipse cx="13" cy="10" rx=".5" ry=".35" fill="#94a3b8"/>
+                <path d="M11.8 11 Q13 11.8 14.2 11" stroke="#94a3b8" stroke-width=".5" fill="none" stroke-linecap="round"/>
+            </svg>
         </div>
-        <div class="brand-text">
+        <div class="brand-info">
             <div class="brand-name">Gyokuro</div>
-            <div class="brand-jp">管理パネル</div>
+            <div class="brand-sub">Trading Admin</div>
         </div>
     </div>
 
-    <ul class="nav flex-column mt-1 flex-grow-1">
-        <div class="nav-group-label">概要</div>
-        <li class="nav-item">
+    <div class="nav-section-label">Overview</div>
+    <ul>
+        <li>
             <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
                href="{{ url_for('main.dashboard') }}">
-                <i class="bi bi-grid-1x2"></i> ダッシュボード
+                <i class="bi bi-grid-1x2"></i> Dashboard
             </a>
         </li>
+    </ul>
 
-        <div class="nav-group-label mt-1">財務</div>
-        <li class="nav-item">
+    <div class="nav-section-label">Finance</div>
+    <ul>
+        <li>
             <a class="nav-link {% if request.endpoint == 'main.deposits' %}active{% endif %}"
                href="{{ url_for('main.deposits') }}">
-                <i class="bi bi-arrow-down-circle"></i> 入金管理
+                <i class="bi bi-arrow-down-circle"></i> Deposits
             </a>
         </li>
-        <li class="nav-item">
+        <li>
             <a class="nav-link {% if request.endpoint == 'main.withdrawals' %}active{% endif %}"
                href="{{ url_for('main.withdrawals') }}">
-                <i class="bi bi-arrow-up-circle"></i> 出金管理
+                <i class="bi bi-arrow-up-circle"></i> Withdrawals
             </a>
         </li>
-        <li class="nav-item">
+        <li>
             <a class="nav-link {% if 'plan' in (request.endpoint or '') %}active{% endif %}"
                href="{{ url_for('main.plans') }}">
-                <i class="bi bi-bar-chart-line"></i> 投資プラン
+                <i class="bi bi-bar-chart-line"></i> Plans
             </a>
         </li>
+    </ul>
 
-        <div class="nav-group-label mt-1">メンバー</div>
-        <li class="nav-item">
+    <div class="nav-section-label">Members</div>
+    <ul>
+        <li>
             <a class="nav-link {% if 'user' in (request.endpoint or '') %}active{% endif %}"
                href="{{ url_for('main.users') }}">
-                <i class="bi bi-people"></i> ユーザー
+                <i class="bi bi-people"></i> Users
             </a>
         </li>
-        <li class="nav-item">
+        <li>
             <a class="nav-link {% if request.endpoint == 'main.broadcast' %}active{% endif %}"
                href="{{ url_for('main.broadcast') }}">
-                <i class="bi bi-megaphone"></i> 一斉送信
+                <i class="bi bi-megaphone"></i> Broadcast
             </a>
         </li>
+    </ul>
 
-        <div class="nav-group-label mt-1">システム</div>
-        <li class="nav-item">
+    <div class="nav-section-label">System</div>
+    <ul>
+        <li>
             <a class="nav-link {% if request.endpoint == 'main.settings' %}active{% endif %}"
                href="{{ url_for('main.settings') }}">
-                <i class="bi bi-gear"></i> 設定
+                <i class="bi bi-gear"></i> Settings
             </a>
         </li>
-        <li class="nav-item">
+        <li>
             <a class="nav-link {% if request.endpoint == 'main.audit_logs' %}active{% endif %}"
                href="{{ url_for('main.audit_logs') }}">
-                <i class="bi bi-shield-check"></i> 監査ログ
+                <i class="bi bi-shield-check"></i> Audit Log
             </a>
         </li>
-        <li class="nav-item">
+        <li>
             <a class="nav-link {% if request.endpoint == 'main.account' %}active{% endif %}"
                href="{{ url_for('main.account') }}">
-                <i class="bi bi-person-circle"></i> マイアカウント
+                <i class="bi bi-person-circle"></i> My Account
             </a>
         </li>
-        <li class="nav-item">
+        <li>
             <a class="nav-link" style="color:#f87171;" href="{{ url_for('main.logout') }}">
-                <i class="bi bi-box-arrow-left"></i> ログアウト
+                <i class="bi bi-box-arrow-left"></i> Sign Out
             </a>
         </li>
     </ul>
 
     <div class="sidebar-footer">
-        <strong>{{ session.get('admin_name', 'Admin') }}</strong><br>
-        Gyokuro Investment Platform
+        <div class="admin-row">
+            <div class="admin-avatar">
+                {{ (session.get('admin_name', 'A') or 'A')[:1].upper() }}
+            </div>
+            <div>
+                <div class="admin-name">{{ session.get('admin_name', 'Admin') }}</div>
+                <div class="admin-role">Administrator</div>
+            </div>
+        </div>
     </div>
 </nav>
 
 <!-- ── Main Content ──────────────────────────────────────────────── -->
-<div class="main-content">
-    <button class="btn btn-sm btn-outline-secondary d-lg-none mb-3"
-            onclick="document.getElementById('sidebar').classList.toggle('show')">
-        <i class="bi bi-list"></i> メニュー
-    </button>
+<div class="main-content" id="mainContent">
 
+    <!-- Top bar -->
+    <div class="topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button class="mobile-toggle" id="sidebarToggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="topbar-title d-none d-sm-block">
+                {% block topbar_title %}Admin Panel{% endblock %}
+            </span>
+        </div>
+        <div class="topbar-right">
+            <div class="topbar-badge">
+                <span class="dot"></span> Live
+            </div>
+            <small class="text-muted d-none d-md-block">{{ now.strftime('%b %d, %Y %H:%M') }} UTC</small>
+        </div>
+    </div>
+
+    <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
+    <div class="px-4 pt-3">
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" style="font-size:.875rem;">
-            <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}x-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
-            {{ message }}
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show d-flex align-items-center gap-2" role="alert" style="font-size:.83rem;">
+            <i class="bi bi-{% if category == 'success' %}check-circle-fill{% elif category == 'danger' %}x-circle-fill{% elif category == 'warning' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %}"></i>
+            <span>{{ message }}</span>
+            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
+    </div>
     {% endif %}
     {% endwith %}
 
-    {% block content %}{% endblock %}
+    <!-- Page content -->
+    <div class="content-wrap fade-in">
+        {% block content %}{% endblock %}
+    </div>
 </div>
+
+<!-- Backdrop for mobile sidebar -->
+<div id="sidebarBackdrop" onclick="document.getElementById('sidebar').classList.remove('open')" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Auto-inject CSRF token into every form that doesn't already have it
+// Auto-inject CSRF token into every form that doesn't already have one
 (function() {
     const csrfToken = {{ csrf_token()|tojson }};
     document.querySelectorAll('form').forEach(function(form) {
@@ -490,7 +716,27 @@
         }
     });
 })();
+
+// Mobile sidebar backdrop
+const sidebar = document.getElementById('sidebar');
+const backdrop = document.getElementById('sidebarBackdrop');
+const toggle = document.getElementById('sidebarToggle');
+if (toggle) {
+    toggle.addEventListener('click', function() {
+        const open = sidebar.classList.toggle('open');
+        backdrop.style.display = open ? 'block' : 'none';
+    });
+}
+document.addEventListener('click', function(e) {
+    if (sidebar && sidebar.classList.contains('open') &&
+        !sidebar.contains(e.target) && e.target !== toggle) {
+        sidebar.classList.remove('open');
+        if (backdrop) backdrop.style.display = 'none';
+    }
+});
 </script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>
+
+

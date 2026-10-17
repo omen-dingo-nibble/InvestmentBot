@@ -1,10 +1,13 @@
-{% extends "base.html" %}
-{% block title %}設定{% endblock %}
+﻿{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block topbar_title %}Settings{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-gear me-2 text-green"></i>設定 Settings</h4>
-    <small style="color:var(--gyo-muted);">Bot・ウォレット・レート設定</small>
+    <div>
+        <h4><i class="bi bi-gear me-2 text-accent"></i>Settings</h4>
+        <div class="page-sub">Bot, wallet, and operational configuration</div>
+    </div>
 </div>
 
 <form method="POST" enctype="multipart/form-data">
@@ -12,31 +15,31 @@
 
     <!-- Bot Config -->
     <div class="card mb-4">
-        <div class="card-header"><i class="bi bi-robot me-2"></i>Bot 設定</div>
+        <div class="card-header"><i class="bi bi-robot me-2"></i>Bot Configuration</div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-8">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">Bot Token</label>
+                    <label class="form-label">Bot Token</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-key"></i></span>
                         <input type="password" name="bot_token" class="form-control"
                                value="{{ settings.get('bot_token', '') }}" placeholder="123456:ABC-DEF…">
                     </div>
-                    <small style="color:var(--gyo-muted);font-size:.75rem;">@BotFather から取得。変更後はbot再起動が必要。</small>
+                    <small class="text-muted" style="font-size:.73rem;">Obtained from @BotFather. Requires bot restart after change.</small>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">Bot Username</label>
+                    <label class="form-label">Bot Username</label>
                     <div class="input-group">
                         <span class="input-group-text">@</span>
                         <input type="text" name="bot_username" class="form-control"
-                               value="{{ settings.get('bot_username', '') }}" placeholder="GyokuroBot">
+                               value="{{ settings.get('bot_username', 'italiaelitetradingbot') }}" placeholder="italiaelitetradingbot">
                     </div>
                 </div>
                 <div class="col-12">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">Admin Telegram IDs</label>
+                    <label class="form-label">Admin Telegram IDs</label>
                     <input type="text" name="admin_ids" class="form-control"
                            value="{{ settings.get('admin_ids', '') }}" placeholder="123456789, 987654321">
-                    <small style="color:var(--gyo-muted);font-size:.75rem;">カンマ区切りのTelegram IDリスト</small>
+                    <small class="text-muted" style="font-size:.73rem;">Comma-separated Telegram user IDs</small>
                 </div>
             </div>
         </div>
@@ -48,23 +51,37 @@
         <div class="card-body">
             <p style="color:var(--gyo-muted);font-size:.8rem;margin-bottom:1rem;">
                 <i class="bi bi-info-circle me-1"></i>
-                各通貨のQRコード画像をアップロードしてください。入金フローでユーザーに表示されます。
+                各通貨の有効/無効を切り替え、ウォレットアドレスとQRコードを設定してください。
+                無効にした通貨は入金選択肢から非表示になります。
             </p>
             <div class="row g-4">
                 {% set cryptos = [
-                    ('btc', 'BTC', 'Bitcoin', 'bi-currency-bitcoin', 'crypto_btc_address', 'qr_btc'),
-                    ('eth', 'ETH', 'Ethereum', 'bi-ethereum', 'crypto_eth_address', 'qr_eth'),
-                    ('usdt_trc20', 'USDT-TRC20', 'USDT (TRC20)', 'bi-coin', 'crypto_usdt_trc20_address', 'qr_usdt_trc20'),
-                    ('usdt_erc20', 'USDT-ERC20', 'USDT (ERC20)', 'bi-coin', 'crypto_usdt_erc20_address', 'qr_usdt_erc20'),
-                    ('ltc', 'LTC', 'Litecoin', 'bi-coin', 'crypto_ltc_address', 'qr_ltc'),
+                    ('btc', 'BTC', 'Bitcoin', 'bi-currency-bitcoin', 'crypto_btc_address', 'qr_btc', 'crypto_btc_enabled'),
+                    ('eth', 'ETH', 'Ethereum', 'bi-ethereum', 'crypto_eth_address', 'qr_eth', 'crypto_eth_enabled'),
+                    ('usdt_trc20', 'USDT-TRC20', 'USDT (TRC20)', 'bi-coin', 'crypto_usdt_trc20_address', 'qr_usdt_trc20', 'crypto_usdt_trc20_enabled'),
+                    ('usdt_erc20', 'USDT-ERC20', 'USDT (ERC20)', 'bi-coin', 'crypto_usdt_erc20_address', 'qr_usdt_erc20', 'crypto_usdt_erc20_enabled'),
+                    ('ltc', 'LTC', 'Litecoin', 'bi-coin', 'crypto_ltc_address', 'qr_ltc', 'crypto_ltc_enabled'),
                 ] %}
-                {% for key, symbol, label, icon, addr_field, qr_field in cryptos %}
+                {% for key, symbol, label, icon, addr_field, qr_field, enabled_field in cryptos %}
+                {% set is_enabled = settings.get(enabled_field, '1') not in ('0', 'false', 'False') %}
                 <div class="col-md-6">
-                    <div class="card" style="background:var(--gyo-surface);">
+                    <div class="card" style="background:var(--gyo-surface);{{ 'opacity:.55;' if not is_enabled else '' }}">
                         <div class="card-body">
-                            <h6 class="mb-3 text-green" style="font-size:.875rem;">
-                                <i class="bi {{ icon }} me-2"></i>{{ label }}
-                            </h6>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="mb-0 text-green" style="font-size:.875rem;">
+                                    <i class="bi {{ icon }} me-2"></i>{{ label }}
+                                </h6>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="{{ enabled_field }}" id="{{ enabled_field }}"
+                                           {{ 'checked' if is_enabled else '' }}
+                                           onchange="this.closest('.card').style.opacity=this.checked?'1':'.55'">
+                                    <label class="form-check-label" for="{{ enabled_field }}"
+                                           style="font-size:.78rem;color:var(--gyo-muted);">
+                                        {{ 'Enabled' if is_enabled else 'Disabled' }}
+                                    </label>
+                                </div>
+                            </div>
                             <div class="mb-2">
                                 <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">ウォレットアドレス</label>
                                 <input type="text" name="{{ addr_field }}" class="form-control font-monospace"
@@ -93,13 +110,132 @@
         </div>
     </div>
 
+    <!-- GCash / Maya E-Wallet Settings -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-phone me-2"></i>GCash &amp; Maya E-Wallet
+        </div>
+        <div class="card-body">
+            <p style="color:var(--gyo-muted);font-size:.8rem;margin-bottom:1.2rem;">
+                <i class="bi bi-shield-lock me-1"></i>
+                When enabled, users can withdraw to their <strong>registered phone number</strong> via GCash or Maya.
+                The phone number is locked to their account and cannot be changed by the user — this is permanent for security.
+            </p>
+            <div class="row g-4">
+
+                <!-- GCash -->
+                {% set gcash_on = settings.get('gcash_enabled', '0') not in ('0', 'false', 'False') %}
+                <div class="col-md-6">
+                    <div class="card" style="background:var(--gyo-surface);{{ 'opacity:.55;' if not gcash_on else '' }}" id="gcash-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="mb-0" style="font-size:.875rem;color:#00d564;">
+                                    <i class="bi bi-phone me-2"></i>📱 GCash
+                                </h6>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="gcash_enabled" id="gcash_enabled"
+                                           {{ 'checked' if gcash_on else '' }}
+                                           onchange="document.getElementById('gcash-card').style.opacity=this.checked?'1':'.55'">
+                                    <label class="form-check-label" for="gcash_enabled"
+                                           style="font-size:.78rem;color:var(--gyo-muted);">
+                                        {{ 'Enabled' if gcash_on else 'Disabled' }}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">GCash Account Number (admin's)</label>
+                                <input type="text" name="gcash_account_number" class="form-control"
+                                       value="{{ settings.get('gcash_account_number', '') }}"
+                                       placeholder="09XXXXXXXXX" style="font-size:.88rem;">
+                                <small style="color:var(--gyo-muted);font-size:.72rem;">Shown to users making deposits via GCash</small>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">GCash Account Name (admin's)</label>
+                                <input type="text" name="gcash_account_name" class="form-control"
+                                       value="{{ settings.get('gcash_account_name', '') }}"
+                                       placeholder="Juan Dela Cruz" style="font-size:.88rem;">
+                            </div>
+                            <div>
+                                <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">GCash QR Code Image</label>
+                                <input type="file" name="qr_gcash" class="form-control"
+                                       accept="image/png,image/jpeg,image/gif,image/webp">
+                                {% set qr_gcash = settings.get('qr_gcash', '') %}
+                                {% if qr_gcash %}
+                                <small style="color:var(--gyo-muted);font-size:.72rem;">
+                                    現在: <code>{{ qr_gcash }}</code>
+                                    <a href="/static/qr/{{ qr_gcash }}" target="_blank" class="ms-1" style="color:#00d564;">プレビュー</a>
+                                </small>
+                                {% else %}
+                                <small style="color:var(--gyo-muted);font-size:.72rem;">QR未設定</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maya -->
+                {% set maya_on = settings.get('maya_enabled', '0') not in ('0', 'false', 'False') %}
+                <div class="col-md-6">
+                    <div class="card" style="background:var(--gyo-surface);{{ 'opacity:.55;' if not maya_on else '' }}" id="maya-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="mb-0" style="font-size:.875rem;color:#6c47d5;">
+                                    <i class="bi bi-phone me-2"></i>💜 Maya
+                                </h6>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="maya_enabled" id="maya_enabled"
+                                           {{ 'checked' if maya_on else '' }}
+                                           onchange="document.getElementById('maya-card').style.opacity=this.checked?'1':'.55'">
+                                    <label class="form-check-label" for="maya_enabled"
+                                           style="font-size:.78rem;color:var(--gyo-muted);">
+                                        {{ 'Enabled' if maya_on else 'Disabled' }}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">Maya Account Number (admin's)</label>
+                                <input type="text" name="maya_account_number" class="form-control"
+                                       value="{{ settings.get('maya_account_number', '') }}"
+                                       placeholder="09XXXXXXXXX" style="font-size:.88rem;">
+                                <small style="color:var(--gyo-muted);font-size:.72rem;">Shown to users making deposits via Maya</small>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">Maya Account Name (admin's)</label>
+                                <input type="text" name="maya_account_name" class="form-control"
+                                       value="{{ settings.get('maya_account_name', '') }}"
+                                       placeholder="Juan Dela Cruz" style="font-size:.88rem;">
+                            </div>
+                            <div>
+                                <label class="form-label" style="color:var(--gyo-muted);font-size:.75rem;">Maya QR Code Image</label>
+                                <input type="file" name="qr_maya" class="form-control"
+                                       accept="image/png,image/jpeg,image/gif,image/webp">
+                                {% set qr_maya = settings.get('qr_maya', '') %}
+                                {% if qr_maya %}
+                                <small style="color:var(--gyo-muted);font-size:.72rem;">
+                                    現在: <code>{{ qr_maya }}</code>
+                                    <a href="/static/qr/{{ qr_maya }}" target="_blank" class="ms-1" style="color:#6c47d5;">プレビュー</a>
+                                </small>
+                                {% else %}
+                                <small style="color:var(--gyo-muted);font-size:.72rem;">QR未設定</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /row -->
+        </div>
+    </div>
+
     <!-- Operational Settings -->
     <div class="card mb-4">
-        <div class="card-header"><i class="bi bi-sliders me-2"></i>運営設定</div>
+        <div class="card-header"><i class="bi bi-sliders me-2"></i>Operational Settings</div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">最低入金額 Min Deposit (₱)</label>
+                    <label class="form-label">Min Deposit (₱)</label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
                         <input type="number" step="1" name="min_deposit_usd" class="form-control"
@@ -107,7 +243,7 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">最低出金額 Min Withdrawal (₱)</label>
+                    <label class="form-label">Min Withdrawal (₱)</label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
                         <input type="number" step="1" name="min_withdrawal_usd" class="form-control"
@@ -115,16 +251,16 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">登録ボーナス Signup Bonus (₱)</label>
+                    <label class="form-label">Sign-up Bonus (₱)</label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
                         <input type="number" step="1" min="0" name="signup_bonus_php" class="form-control"
                                value="{{ settings.get('signup_bonus_php', 50) }}">
                     </div>
-                    <small style="color:var(--gyo-muted);font-size:.72rem;">0で無効化</small>
+                    <small class="text-muted" style="font-size:.72rem;">Set to 0 to disable</small>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">紹介ボーナス Referral Bonus (%)</label>
+                    <label class="form-label">Referral Bonus (%)</label>
                     <div class="input-group">
                         <input type="number" step="0.01" name="referral_bonus_percent" class="form-control"
                                value="{{ settings.get('referral_bonus_percent', 5) }}">
@@ -132,47 +268,46 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">サポートハンドル Support</label>
+                    <label class="form-label">Support Handle</label>
                     <div class="input-group">
                         <span class="input-group-text">@</span>
                         <input type="text" name="support_handle" class="form-control"
-                               value="{{ settings.get('support_handle', 'GyokuroSupport') }}">
+                               value="{{ settings.get('support_handle', 'italiaelitetradingbot') }}">
                     </div>
                 </div>
                 <div class="col-md-4 d-flex align-items-end pb-1 gap-3 flex-column justify-content-center">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="deduct_referral_from_investor"
                                id="deduct_ref" {{ 'checked' if settings.get('deduct_referral_from_investor') else '' }}>
-                        <label class="form-check-label" for="deduct_ref" style="font-size:.82rem;">投資家から紹介料を差引</label>
+                        <label class="form-check-label" for="deduct_ref" style="font-size:.82rem;">Deduct referral from investor</label>
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="maintenance_mode"
                                id="maint" {{ 'checked' if settings.get('maintenance_mode') else '' }}>
                         <label class="form-check-label text-warning" for="maint" style="font-size:.82rem;">
-                            <i class="bi bi-exclamation-triangle me-1"></i>メンテナンスモード
+                            <i class="bi bi-exclamation-triangle me-1"></i>Maintenance Mode
                         </label>
                     </div>
                 </div>
                 <div class="col-12">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">ウェルカムメッセージ Welcome Message</label>
+                    <label class="form-label">Welcome Message</label>
                     <textarea name="welcome_message" class="form-control" rows="4"
-                              placeholder="ウェルカムメッセージ…">{{ settings.get('welcome_message', '') }}</textarea>
+                              placeholder="Welcome message…">{{ settings.get('welcome_message', '') }}</textarea>
                 </div>
 
                 <!-- Mirror site URLs -->
                 <div class="col-12">
-                    <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">
+                    <label class="form-label">
                         <i class="bi bi-globe me-1"></i>Mirror Site URLs
                         <span style="font-size:.72rem;font-weight:400;margin-left:6px;">
                             Comma-separated. Used to generate web invite links for each domain.
                         </span>
                     </label>
                     <textarea name="site_urls" class="form-control" rows="3"
-                              placeholder="https://gyokuro.app, https://mirror1.gyokuro.com, https://gyokuro.io"
+                              placeholder="https://gyokuro.app, https://mirror1.com"
                               style="font-size:.83rem;font-family:monospace;">{{ settings.get('site_urls', '') }}</textarea>
-                    <div style="font-size:.72rem;color:var(--gyo-muted);margin-top:4px;">
+                    <div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">
                         Each URL becomes an invite link on the portal and a line in the Telegram /referral message.
-                        Example: <code>https://gyokuro.app, https://gyokuro.io</code>
                     </div>
                 </div>
             </div>
@@ -180,11 +315,12 @@
     </div>
 
     <div class="d-flex align-items-center gap-3">
-        <button type="submit" class="btn btn-gold px-4">
-            <i class="bi bi-check-lg me-2"></i>設定を保存 Save All
+        <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-check-lg me-2"></i>Save All Settings
         </button>
-        <small style="color:var(--gyo-muted);">Token・ウォレット変更後はbot再起動が必要です。</small>
+        <small class="text-muted">Bot restart required for token / wallet / QR changes.</small>
     </div>
 
 </form>
 {% endblock %}
+

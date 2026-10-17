@@ -1,54 +1,43 @@
-{% extends "base.html" %}
-{% block title %}ダッシュボード{% endblock %}
+﻿{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
 {% block content %}
 
 <div class="page-header">
     <div>
-        <h4><i class="bi bi-grid-1x2 me-2 text-green"></i>ダッシュボード</h4>
-        <small style="color:var(--gyo-muted);">玉露 Gyokuro — Investment Overview</small>
-    </div>
-    <div class="text-end">
-        <span class="badge" style="background:rgba(82,183,136,.2);color:var(--gyo-green);border:1px solid rgba(82,183,136,.3);">● LIVE</span>
-        <small style="color:var(--gyo-muted);display:block;font-size:.72rem;margin-top:2px;">{{ now.strftime('%b %d, %Y %H:%M UTC') }}</small>
+        <h4><i class="bi bi-grid-1x2 me-2 text-accent"></i>Dashboard</h4>
+        <div class="page-sub">Gyokuro — Investment Overview</div>
     </div>
 </div>
 
 <!-- Stats row 1 -->
 <div class="row g-3 mb-3">
     <div class="col-6 col-lg-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(59,130,246,.12);">
-                <i class="bi bi-people" style="color:#60a5fa;"></i>
-            </div>
+        <div class="stat-card" style="--card-accent:#3b82f6;--icon-bg:rgba(59,130,246,.12);--icon-color:#3b82f6;">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
             <div class="stat-value" style="color:#60a5fa;">{{ stats.users }}</div>
-            <div class="stat-label">会員数 Members</div>
+            <div class="stat-label">Total Members</div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:var(--gyo-glow);">
-                <i class="bi bi-arrow-down-circle" style="color:var(--gyo-green);"></i>
-            </div>
+        <div class="stat-card" style="--card-accent:#10b981;--icon-bg:rgba(16,185,129,.12);--icon-color:#10b981;">
+            <div class="stat-icon"><i class="bi bi-arrow-down-circle"></i></div>
             <div class="stat-value text-green">{{ stats.total_deposits_approved | money }}</div>
-            <div class="stat-label">総入金 Total Deposits</div>
+            <div class="stat-label">Total Deposits</div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(212,168,83,.1);">
-                <i class="bi bi-bar-chart-line" style="color:var(--gyo-gold);"></i>
-            </div>
-            <div class="stat-value" style="color:var(--gyo-gold);">{{ stats.active_investments }}</div>
-            <div class="stat-label">運用中 Active Investments</div>
+        <div class="stat-card" style="--card-accent:#f59e0b;--icon-bg:rgba(245,158,11,.1);--icon-color:#f59e0b;">
+            <div class="stat-icon"><i class="bi bi-bar-chart-line"></i></div>
+            <div class="stat-value text-gold">{{ stats.active_investments }}</div>
+            <div class="stat-label">Active Investments</div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(124,58,237,.12);">
-                <i class="bi bi-bank" style="color:#a78bfa;"></i>
-            </div>
+        <div class="stat-card" style="--card-accent:#8b5cf6;--icon-bg:rgba(139,92,246,.12);--icon-color:#8b5cf6;">
+            <div class="stat-icon"><i class="bi bi-bank"></i></div>
             <div class="stat-value" style="color:#a78bfa;">{{ stats.total_principal_active | money }}</div>
-            <div class="stat-label">運用資本 Capital Locked</div>
+            <div class="stat-label">Capital Locked</div>
         </div>
     </div>
 </div>
@@ -56,39 +45,31 @@
 <!-- Stats row 2 -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(212,168,83,.1);">
-                <i class="bi bi-hourglass-split" style="color:var(--gyo-gold);"></i>
-            </div>
-            <div class="stat-value" style="color:var(--gyo-gold);">{{ stats.pending_deposits }}</div>
-            <div class="stat-label">承認待入金 Pending Deposits</div>
+        <div class="stat-card" style="--card-accent:#f59e0b;--icon-bg:rgba(245,158,11,.1);--icon-color:#f59e0b;">
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-value text-gold">{{ stats.pending_deposits }}</div>
+            <div class="stat-label">Pending Deposits</div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(239,68,68,.1);">
-                <i class="bi bi-hourglass" style="color:#f87171;"></i>
-            </div>
+        <div class="stat-card" style="--card-accent:#ef4444;--icon-bg:rgba(239,68,68,.1);--icon-color:#ef4444;">
+            <div class="stat-icon"><i class="bi bi-hourglass"></i></div>
             <div class="stat-value" style="color:#f87171;">{{ stats.pending_withdrawals }}</div>
-            <div class="stat-label">承認待出金 Pending WD</div>
+            <div class="stat-label">Pending Withdrawals</div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:var(--gyo-glow);">
-                <i class="bi bi-coin" style="color:var(--gyo-green);"></i>
-            </div>
+        <div class="stat-card" style="--card-accent:#10b981;--icon-bg:rgba(16,185,129,.12);--icon-color:#10b981;">
+            <div class="stat-icon"><i class="bi bi-coin"></i></div>
             <div class="stat-value text-green">{{ stats.total_earnings_paid | money }}</div>
-            <div class="stat-label">支払利益 Earnings Paid</div>
+            <div class="stat-label">Earnings Paid</div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(59,130,246,.12);">
-                <i class="bi bi-gift" style="color:#60a5fa;"></i>
-            </div>
+        <div class="stat-card" style="--card-accent:#3b82f6;--icon-bg:rgba(59,130,246,.12);--icon-color:#3b82f6;">
+            <div class="stat-icon"><i class="bi bi-gift"></i></div>
             <div class="stat-value" style="color:#60a5fa;">{{ stats.total_referral_bonus | money }}</div>
-            <div class="stat-label">紹介報酬 Referral Bonus</div>
+            <div class="stat-label">Referral Bonuses</div>
         </div>
     </div>
 </div>
@@ -98,8 +79,8 @@
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-arrow-down-circle me-2 text-green"></i>承認待 入金</span>
-                <a href="{{ url_for('main.deposits') }}" class="btn btn-sm btn-outline-gold">すべて表示</a>
+                <span><i class="bi bi-arrow-down-circle me-2 text-green"></i>Pending Deposits</span>
+                <a href="{{ url_for('main.deposits') }}" class="btn btn-sm btn-outline-gold">View All</a>
             </div>
             <div class="card-body p-0">
                 {% if recent_deposits %}
@@ -111,8 +92,8 @@
                         <tr onclick="location.href='{{ url_for('main.deposits') }}'" style="cursor:pointer;">
                             <td><code>#{{ d.id }}</code></td>
                             <td><small>{{ d.user_id }}</small></td>
-                            <td><strong>{{ d.amount | money }}</strong></td>
-                            <td><small style="color:var(--gyo-muted);">{{ d.created_at | timeago }}</small></td>
+                            <td><strong class="text-green">{{ d.amount | money }}</strong></td>
+                            <td><small class="text-muted">{{ d.created_at | timeago }}</small></td>
                             <td><span class="badge badge-pending">pending</span></td>
                         </tr>
                         {% endfor %}
@@ -120,9 +101,9 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="p-4 text-center" style="color:var(--gyo-muted);">
-                    <i class="bi bi-check-circle-fill text-green fs-3 d-block mb-2"></i>
-                    承認待入金なし No pending deposits
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-check-circle-fill text-green d-block mb-2" style="font-size:2rem;"></i>
+                    No pending deposits
                 </div>
                 {% endif %}
             </div>
@@ -132,8 +113,8 @@
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-arrow-up-circle me-2 text-green"></i>承認待 出金</span>
-                <a href="{{ url_for('main.withdrawals') }}" class="btn btn-sm btn-outline-gold">すべて表示</a>
+                <span><i class="bi bi-arrow-up-circle me-2 text-gold"></i>Pending Withdrawals</span>
+                <a href="{{ url_for('main.withdrawals') }}" class="btn btn-sm btn-outline-gold">View All</a>
             </div>
             <div class="card-body p-0">
                 {% if recent_withdrawals %}
@@ -145,8 +126,8 @@
                         <tr onclick="location.href='{{ url_for('main.withdrawals') }}'" style="cursor:pointer;">
                             <td><code>#{{ w.id }}</code></td>
                             <td><small>{{ w.user_id }}</small></td>
-                            <td><strong>{{ w.amount | money }}</strong></td>
-                            <td><small style="color:var(--gyo-muted);">{{ w.created_at | timeago }}</small></td>
+                            <td><strong class="text-green">{{ w.amount | money }}</strong></td>
+                            <td><small class="text-muted">{{ w.created_at | timeago }}</small></td>
                             <td><span class="badge badge-pending">pending</span></td>
                         </tr>
                         {% endfor %}
@@ -154,9 +135,9 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="p-4 text-center" style="color:var(--gyo-muted);">
-                    <i class="bi bi-check-circle-fill text-green fs-3 d-block mb-2"></i>
-                    承認待出金なし No pending withdrawals
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-check-circle-fill text-green d-block mb-2" style="font-size:2rem;"></i>
+                    No pending withdrawals
                 </div>
                 {% endif %}
             </div>
@@ -167,30 +148,31 @@
 <!-- Audit log -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-shield-check me-2 text-green"></i>最近の管理操作 Recent Activity</span>
-        <a href="{{ url_for('main.audit_logs') }}" class="btn btn-sm btn-outline-secondary">全ログ</a>
+        <span><i class="bi bi-shield-check me-2 text-accent"></i>Recent Activity</span>
+        <a href="{{ url_for('main.audit_logs') }}" class="btn btn-sm btn-outline-secondary">All Logs</a>
     </div>
     <div class="card-body p-0">
         {% if recent_logs %}
         <div class="table-responsive">
             <table class="table table-sm mb-0">
-                <thead><tr><th>時刻</th><th>Admin</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
+                <thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
                 <tbody>
                 {% for l in recent_logs %}
                 <tr>
-                    <td><small style="color:var(--gyo-muted);">{{ l.created_at | timeago }}</small></td>
+                    <td><small class="text-muted">{{ l.created_at | timeago }}</small></td>
                     <td><small>{{ l.admin_name or '—' }}</small></td>
                     <td><code>{{ l.action }}</code></td>
-                    <td><small style="color:var(--gyo-muted);">{{ (l.details or '')[:70] }}</small></td>
-                    <td><small style="color:var(--gyo-muted);">{{ l.ip_address or '—' }}</small></td>
+                    <td><small class="text-muted">{{ (l.details or '')[:70] }}</small></td>
+                    <td><small class="text-muted">{{ l.ip_address or '—' }}</small></td>
                 </tr>
                 {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="p-3 text-center" style="color:var(--gyo-muted);">操作履歴なし</div>
+        <div class="p-3 text-center text-muted">No activity yet.</div>
         {% endif %}
     </div>
 </div>
 {% endblock %}
+

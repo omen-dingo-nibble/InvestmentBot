@@ -1,239 +1,329 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ログイン | 玉露 Gyokuro</title>
+    <title>Admin Sign In — Gyokuro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
-            --gyo-ink:     #0a0f0d;
-            --gyo-washi:   #111a14;
-            --gyo-card:    #1c2a1f;
-            --gyo-border:  #253b2c;
-            --gyo-matcha:  #2d6a4f;
-            --gyo-green:   #52b788;
-            --gyo-light:   #74c69d;
-            --gyo-text:    #e8f5ec;
-            --gyo-muted:   #6b8f74;
-            --gyo-gold:    #d4a853;
+            --bg-base:       #080c14;
+            --bg-card:       #111827;
+            --bg-input:      #0d1117;
+            --border:        rgba(255,255,255,.07);
+            --border-bright: rgba(255,255,255,.12);
+            --accent:        #3b82f6;
+            --accent-dark:   #1d4ed8;
+            --accent-glow:   rgba(59,130,246,.18);
+            --green:         #4ade80;
+            --text:          #f1f5f9;
+            --muted:         #64748b;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
 
         body {
+            background: var(--bg-base);
+            font-family: 'Inter', system-ui, sans-serif;
+            color: var(--text);
+            display: grid;
+            place-items: center;
             min-height: 100vh;
-            background: var(--gyo-ink);
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Inter', sans-serif;
-            padding: 1rem;
-            background-image:
-                radial-gradient(ellipse at 20% 50%, rgba(45,106,79,.12) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(82,183,136,.06) 0%, transparent 50%);
+            padding: 24px;
         }
 
-        .login-wrap { width: 100%; max-width: 400px; }
-
-        /* Japanese decorative header */
-        .jp-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .logo-mark {
-            width: 72px; height: 72px;
-            background: linear-gradient(135deg, var(--gyo-matcha), var(--gyo-green));
-            border-radius: 20px;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 1rem;
-            box-shadow: 0 0 30px rgba(82,183,136,.25), 0 0 60px rgba(82,183,136,.08);
-        }
-
-        .logo-mark .jp-char {
-            font-size: 1.6rem; color: #fff; font-weight: 800;
-            line-height: 1; letter-spacing: -1px;
-        }
-
-        .jp-header h1 {
-            font-size: 1.5rem; font-weight: 800;
-            color: var(--gyo-text); margin-bottom: .3rem;
-        }
-
-        .jp-header .jp-sub {
-            font-size: .8rem; color: var(--gyo-muted);
-            letter-spacing: 2px;
-        }
-
-        /* Decorative Japanese border pattern */
-        .jp-header .jp-pattern {
-            display: flex; align-items: center; gap: 8px;
-            justify-content: center; margin-top: .6rem;
-        }
-
-        .jp-header .jp-pattern span {
-            font-size: .7rem; color: var(--gyo-muted); letter-spacing: 4px;
-        }
-
-        .jp-header .jp-pattern::before,
-        .jp-header .jp-pattern::after {
+        /* Subtle animated grid background */
+        body::before {
             content: '';
-            flex: 1; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gyo-border), transparent);
+            position: fixed; inset: 0; z-index: 0;
+            background-image:
+                linear-gradient(rgba(59,130,246,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59,130,246,.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
         }
 
+        /* Glow blobs */
+        .glow-blob {
+            position: fixed; border-radius: 50%;
+            filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .glow-blob-1 {
+            width: 400px; height: 400px;
+            background: rgba(59,130,246,.06);
+            top: -100px; left: -100px;
+            animation: drift 12s ease-in-out infinite;
+        }
+        .glow-blob-2 {
+            width: 300px; height: 300px;
+            background: rgba(74,222,128,.04);
+            bottom: -80px; right: -80px;
+            animation: drift 16s ease-in-out infinite reverse;
+        }
+        @keyframes drift {
+            0%, 100% { transform: translate(0,0); }
+            50%       { transform: translate(20px, 20px); }
+        }
+
+        .login-wrap {
+            width: 100%; max-width: 420px;
+            position: relative; z-index: 1;
+        }
+
+        /* Brand header */
+        .brand-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .brand-logo {
+            width: 68px; height: 68px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #1a2f1a, #2d5a2d);
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-bottom: 14px;
+            box-shadow: 0 0 0 1px rgba(255,255,255,.1),
+                        0 8px 32px rgba(0,0,0,.5),
+                        0 0 40px rgba(74,222,128,.1);
+            position: relative;
+        }
+
+        .brand-logo::before {
+            content: '';
+            position: absolute; inset: 0; border-radius: 18px;
+            background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 50%);
+        }
+
+        .brand-logo svg { width: 42px; height: 42px; position: relative; z-index: 1; }
+
+        .brand-header h1 {
+            font-size: 1.35rem; font-weight: 800;
+            color: var(--text); margin-bottom: 4px;
+            letter-spacing: -.3px;
+        }
+
+        .brand-header p {
+            font-size: .75rem; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 1.5px;
+        }
+
+        /* Login card */
         .login-card {
-            background: var(--gyo-card);
-            border: 1px solid var(--gyo-border);
-            border-radius: 20px;
-            padding: 2rem 1.75rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,.4);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 28px 26px;
+            box-shadow: 0 24px 80px rgba(0,0,0,.5),
+                        0 0 0 1px rgba(255,255,255,.04);
         }
 
-        .form-label {
-            color: var(--gyo-muted);
-            font-size: .8rem;
-            font-weight: 600;
-            letter-spacing: .3px;
-            margin-bottom: .4rem;
+        /* Form elements */
+        .field { margin-bottom: 18px; }
+
+        .field label {
+            display: block;
+            font-size: .73rem; font-weight: 600;
+            color: var(--muted); text-transform: uppercase;
+            letter-spacing: .5px; margin-bottom: 7px;
         }
 
-        .input-group-text {
-            background: rgba(255,255,255,.04);
-            border-color: var(--gyo-border);
-            color: var(--gyo-muted);
+        .input-wrap { position: relative; }
+
+        .input-wrap .input-icon {
+            position: absolute; left: 12px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted); font-size: .95rem;
+            pointer-events: none;
         }
 
-        .form-control {
-            background: rgba(255,255,255,.04);
-            border-color: var(--gyo-border);
-            color: var(--gyo-text);
-            border-radius: 0 8px 8px 0 !important;
+        .input-wrap input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-bright);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 10px 12px 10px 36px;
+            font-size: .875rem; font-family: inherit;
+            transition: border-color .15s, box-shadow .15s;
         }
 
-        .form-control:first-child {
-            border-radius: 8px 0 0 8px !important;
+        .input-wrap input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
         }
 
-        .form-control:focus {
-            background: rgba(255,255,255,.06);
-            border-color: var(--gyo-green);
-            color: var(--gyo-text);
-            box-shadow: 0 0 0 .2rem rgba(82,183,136,.18);
+        .input-wrap input::placeholder { color: #334155; }
+
+        /* Password toggle */
+        .input-wrap .pw-toggle {
+            position: absolute; right: 10px; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none; padding: 4px;
+            color: var(--muted); cursor: pointer; font-size: .9rem;
+            transition: color .15s;
         }
+        .input-wrap .pw-toggle:hover { color: var(--text); }
 
-        .form-control::placeholder { color: #3a5040; }
-
+        /* Submit button */
         .btn-signin {
             width: 100%;
-            background: linear-gradient(135deg, var(--gyo-matcha), var(--gyo-green));
+            background: var(--accent);
             border: none; color: #fff;
-            font-weight: 700; font-size: .95rem;
-            padding: .75rem;
-            border-radius: 12px;
-            transition: all .2s;
-            box-shadow: 0 4px 16px rgba(82,183,136,.25);
+            font-weight: 700; font-size: .88rem; font-family: inherit;
+            padding: 11px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background .15s, box-shadow .15s, transform .1s;
+            box-shadow: 0 4px 14px var(--accent-glow);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
 
         .btn-signin:hover {
-            background: linear-gradient(135deg, var(--gyo-green), #74c69d);
-            color: #fff;
-            box-shadow: 0 6px 20px rgba(82,183,136,.35);
+            background: var(--accent-dark);
+            box-shadow: 0 6px 20px rgba(59,130,246,.4);
             transform: translateY(-1px);
         }
 
-        .error-box {
-            background: rgba(220,53,69,.1);
-            border: 1px solid rgba(220,53,69,.25);
-            border-radius: 10px;
-            padding: .65rem 1rem;
-            font-size: .85rem;
-            color: #f87171;
-            margin-bottom: 1rem;
+        .btn-signin:active { transform: translateY(0); }
+
+        /* Error / flash */
+        .alert-box {
             display: flex; align-items: center; gap: 8px;
+            padding: 10px 13px; border-radius: 9px;
+            font-size: .82rem; margin-bottom: 18px;
         }
 
-        .footer-note {
-            text-align: center;
-            margin-top: 1.5rem;
-            font-size: .72rem;
-            color: var(--gyo-muted);
-            letter-spacing: .5px;
+        .alert-box.error {
+            background: rgba(239,68,68,.1);
+            border: 1px solid rgba(239,68,68,.25);
+            color: #f87171;
         }
 
-        /* Subtle animated tea leaves */
-        .tea-leaf {
-            position: fixed;
-            font-size: 1.2rem;
-            opacity: .04;
-            animation: float 8s ease-in-out infinite;
-            pointer-events: none;
-            user-select: none;
+        .alert-box.success {
+            background: rgba(74,222,128,.1);
+            border: 1px solid rgba(74,222,128,.25);
+            color: var(--green);
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(10deg); }
+        /* Divider */
+        .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 20px 0;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: var(--border);
+        }
+        .divider span { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+
+        /* Footer */
+        .login-footer {
+            text-align: center; margin-top: 20px;
+            font-size: .7rem; color: #1e293b;
+            letter-spacing: .3px;
         }
     </style>
 </head>
 <body>
-    <!-- Decorative background elements -->
-    <div class="tea-leaf" style="top:10%;left:5%;animation-delay:0s;">🍵</div>
-    <div class="tea-leaf" style="top:70%;left:3%;animation-delay:2s;">🌿</div>
-    <div class="tea-leaf" style="top:20%;right:5%;animation-delay:4s;">🍃</div>
-    <div class="tea-leaf" style="top:80%;right:8%;animation-delay:1s;">🌱</div>
+    <div class="glow-blob glow-blob-1"></div>
+    <div class="glow-blob glow-blob-2"></div>
 
     <div class="login-wrap">
-        <div class="jp-header">
-            <div class="logo-mark">
-                <span class="jp-char">玉露</span>
+        <!-- Brand -->
+        <div class="brand-header">
+            <div class="brand-logo">
+                <svg viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="18" y="1" width="5" height="38" rx="2.5" fill="#4ade80" opacity=".85"/>
+                    <rect x="18" y="11" width="5" height="2.5" rx="1.25" fill="#86efac"/>
+                    <rect x="18" y="21" width="5" height="2.5" rx="1.25" fill="#86efac"/>
+                    <rect x="18" y="30" width="5" height="2.5" rx="1.25" fill="#86efac"/>
+                    <path d="M23 10 Q34 7 32 14 Q23 13 23 10Z" fill="#4ade80" opacity=".7"/>
+                    <path d="M18 19 Q7 16 9 23 Q18 22 18 19Z" fill="#4ade80" opacity=".7"/>
+                    <path d="M23 28 Q35 25 33 32 Q23 31 23 28Z" fill="#4ade80" opacity=".7"/>
+                    <circle cx="21" cy="14" r="7" fill="#e2e8f0" opacity=".95"/>
+                    <circle cx="16.5" cy="8.5" r="2.3" fill="#1e293b"/>
+                    <circle cx="25.5" cy="8.5" r="2.3" fill="#1e293b"/>
+                    <ellipse cx="18.5" cy="13.5" rx="1.7" ry="1.9" fill="#1e293b"/>
+                    <ellipse cx="23.5" cy="13.5" rx="1.7" ry="1.9" fill="#1e293b"/>
+                    <circle cx="18.5" cy="13.5" r=".6" fill="white"/>
+                    <circle cx="23.5" cy="13.5" r=".6" fill="white"/>
+                    <ellipse cx="21" cy="16.3" rx=".8" ry=".55" fill="#94a3b8"/>
+                    <path d="M19.2 17.8 Q21 18.8 22.8 17.8" stroke="#94a3b8" stroke-width=".7" fill="none" stroke-linecap="round"/>
+                </svg>
             </div>
             <h1>Gyokuro</h1>
-            <div class="jp-sub">INVESTMENT ADMIN PORTAL</div>
-            <div class="jp-pattern"><span>管 理 シ ス テ ム</span></div>
+            <p>Admin Portal</p>
         </div>
 
+        <!-- Card -->
         <div class="login-card">
+
             {% if error %}
-            <div class="error-box">
-                <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+            <div class="alert-box error">
+                <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
             </div>
             {% endif %}
 
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% for cat, msg in messages %}
-            <div class="error-box" style="{% if cat == 'success' %}background:rgba(82,183,136,.1);border-color:rgba(82,183,136,.3);color:#74c69d;{% endif %}">
-                {{ msg }}
+            <div class="alert-box {{ 'success' if cat == 'success' else 'error' }}">
+                <i class="bi bi-{{ 'check-circle-fill' if cat == 'success' else 'exclamation-circle-fill' }}"></i> {{ msg }}
             </div>
             {% endfor %}
             {% endwith %}
 
-            <form method="POST">
+            <form method="POST" autocomplete="on">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-3">
-                    <label class="form-label">ユーザー名 USERNAME</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-person"></i></span>
-                        <input type="text" class="form-control" name="username"
+
+                <div class="field">
+                    <label for="username">Username</label>
+                    <div class="input-wrap">
+                        <i class="bi bi-person input-icon"></i>
+                        <input type="text" id="username" name="username"
+                               autocomplete="username"
                                required autofocus placeholder="admin">
                     </div>
                 </div>
-                <div class="mb-4">
-                    <label class="form-label">パスワード PASSWORD</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control" name="password"
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <i class="bi bi-lock input-icon"></i>
+                        <input type="password" id="password" name="password"
+                               autocomplete="current-password"
                                required placeholder="••••••••">
+                        <button type="button" class="pw-toggle" onclick="
+                            const i = document.getElementById('password');
+                            const ic = this.querySelector('i');
+                            if (i.type==='password') { i.type='text'; ic.className='bi bi-eye-slash'; }
+                            else { i.type='password'; ic.className='bi bi-eye'; }
+                        " tabindex="-1">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     </div>
                 </div>
+
                 <button type="submit" class="btn-signin">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>サインイン Sign In
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Sign In
                 </button>
             </form>
+
+            <div class="divider"><span>Secure Admin Access</span></div>
+
+            <div style="text-align:center;font-size:.75rem;color:var(--muted);">
+                Protected by rate-limiting, CSRF tokens &amp; HSTS
+            </div>
         </div>
 
-        <div class="footer-note">玉露 GYOKURO &nbsp;·&nbsp; INVESTMENT PLATFORM</div>
+        <div class="login-footer">
+            Gyokuro &nbsp;·&nbsp; INVESTMENT PLATFORM
+        </div>
     </div>
 </body>
 </html>
+

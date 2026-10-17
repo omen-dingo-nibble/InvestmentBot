@@ -1,4 +1,4 @@
-"""Investor-facing conversation handlers — PHP (₱) only."""
+﻿"""Investor-facing conversation handlers — PHP (₱) only."""
 from __future__ import annotations
 
 import logging
@@ -16,6 +16,7 @@ from keyboards.user_kb import (
     cancel_keyboard,
     deposit_currency_keyboard,
     plans_keyboard,
+    withdraw_method_keyboard,
 )
 from utils.decorators import not_banned
 from utils.formatters import fmt_money, fmt_percent, fmt_short_date, fmt_user, truncate
@@ -130,7 +131,19 @@ async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     context.user_data.pop("deposit", None)
     db = get_db()
     crypto_map = CONFIG.crypto.as_dict()
-    available = [k for k, v in crypto_map.items() if v]
+    # Key mapping from CONFIG symbol → settings key
+    _enabled_key_map = {
+        "BTC": "crypto_btc_enabled",
+        "ETH": "crypto_eth_enabled",
+        "USDT-TRC20": "crypto_usdt_trc20_enabled",
+        "USDT-ERC20": "crypto_usdt_erc20_enabled",
+        "LTC": "crypto_ltc_enabled",
+    }
+    # Only show currencies that have an address AND are enabled in admin settings
+    available = [
+        k for k, v in crypto_map.items()
+        if v and str(db.get_setting(_enabled_key_map.get(k, ""), "1")).strip() not in ("0", "false", "False")
+    ]
     if not available:
         await query.edit_message_text(
             "⚠️ No payment addresses configured yet. Please contact support.",
@@ -522,6 +535,32 @@ async def my_investments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # Withdraw
 # ---------------------------------------------------------------------------
 
+def _get_withdraw_methods(db) -> tuple[bool, bool, bool]:
+    """Return (gcash_on, maya_on, crypto_on) based on admin settings.
+
+    crypto_on is True if at least one crypto currency has both an address
+    configured AND is not disabled in admin settings.
+    """
+    gcash_on = str(db.get_setting("gcash_enabled", "0")).strip() in ("1", "true", "True")
+    maya_on  = str(db.get_setting("maya_enabled",  "0")).strip() in ("1", "true", "True")
+    # Build the same key mapping used by the deposit flow
+    _key_map = {
+        "BTC": "crypto_btc_enabled",
+        "ETH": "crypto_eth_enabled",
+        "USDT-TRC20": "crypto_usdt_trc20_enabled",
+        "USDT-ERC20": "crypto_usdt_erc20_enabled",
+        "LTC": "crypto_ltc_enabled",
+    }
+    crypto_on = False
+    for symbol, addr in CONFIG.crypto.as_dict().items():
+        enabled_key = _key_map.get(symbol, "")
+        is_enabled = str(db.get_setting(enabled_key, "1")).strip() not in ("0", "false", "False")
+        if addr and is_enabled:
+            crypto_on = True
+            break
+    return gcash_on, maya_on, crypto_on
+
+
 @not_banned
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -566,9 +605,68 @@ async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return -1
 
-    # Enough balance — show the normal form
+    gcash_on, maya_on, crypto_on = _get_withdraw_methods(db)
+    if not gcash_on and not maya_on and not crypto_on:
+        await query.edit_message_text(
+            "⚠️ No withdrawal methods are currently available. Please contact support.",
+            reply_markup=back_to_main(),
+        )
+        return -1
+
+    # Only one method available → skip the picker and go straight to amount
+    total_methods = sum([gcash_on, maya_on, crypto_on])
+    if total_methods == 1:
+        single = "GCASH" if gcash_on else ("MAYA" if maya_on else "CRYPTO")
+        context.user_data["withdraw"] = {"method": single}
+        await query.edit_message_text(
+            f"💸 *Withdraw Funds*\n\n"
+            f"Balance: *{fmt_money(balance)}*\n"
+            f"Minimum withdrawal: *{fmt_money(min_wd)}*\n\n"
+            f"Enter the amount in ₱ PHP to withdraw.",
+            reply_markup=cancel_keyboard(CB["main_menu"]), parse_mode="Markdown",
+        )
+        return State.WITHDRAW_ENTER_AMOUNT
+
+    # Multiple methods → show the picker first
+    context.user_data.pop("withdraw", None)
     await query.edit_message_text(
         f"💸 *Withdraw Funds*\n\n"
+        f"Balance: *{fmt_money(balance)}*\n\n"
+        f"Select your withdrawal method:",
+        reply_markup=withdraw_method_keyboard(gcash_on, maya_on, crypto_on, CB["main_menu"]),
+        parse_mode="Markdown",
+    )
+    return State.WITHDRAW_SELECT_METHOD
+
+
+@not_banned
+async def withdraw_select_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle the user tapping a withdrawal method button."""
+    query = update.callback_query
+    await query.answer()
+    method = query.data.split(":", 2)[2].upper()  # GCASH | MAYA | CRYPTO
+    db = get_db()
+    record = db.get_user(update.effective_user.id)
+    min_wd = float(db.get_setting("min_withdrawal_usd", CONFIG.min_withdrawal_usd))
+    balance = record["balance"]
+
+    # Security: verify the chosen method is still enabled
+    gcash_on, maya_on, crypto_on = _get_withdraw_methods(db)
+    method_ok = (
+        (method == "GCASH" and gcash_on)
+        or (method == "MAYA" and maya_on)
+        or (method == "CRYPTO" and crypto_on)
+    )
+    if not method_ok:
+        await query.edit_message_text(
+            "⚠️ That withdrawal method is not available. Please try again.",
+            reply_markup=back_to_main(),
+        )
+        return -1
+
+    context.user_data["withdraw"] = {"method": method}
+    await query.edit_message_text(
+        f"💸 *Withdraw via {'GCash 📱' if method == 'GCASH' else 'Maya 💜' if method == 'MAYA' else 'Crypto ₿'}*\n\n"
         f"Balance: *{fmt_money(balance)}*\n"
         f"Minimum withdrawal: *{fmt_money(min_wd)}*\n\n"
         f"Enter the amount in ₱ PHP to withdraw.",
@@ -598,12 +696,37 @@ async def withdraw_enter_amount(update: Update, context: ContextTypes.DEFAULT_TY
             reply_markup=cancel_keyboard(CB["main_menu"]),
         )
         return State.WITHDRAW_ENTER_AMOUNT
-    context.user_data["withdraw"] = {"amount": amount}
-    await update.effective_message.reply_text(
-        "Enter the *crypto wallet address* you want to receive payment on.",
-        reply_markup=cancel_keyboard(CB["main_menu"]), parse_mode="Markdown",
-    )
-    return State.WITHDRAW_ENTER_ADDRESS
+    context.user_data.setdefault("withdraw", {})["amount"] = amount
+    method = context.user_data["withdraw"].get("method", "CRYPTO")
+
+    if method in ("GCASH", "MAYA"):
+        # Phone number is permanently bound to the account — use it directly
+        phone = user_record.get("phone") or ""
+        if not phone:
+            await update.effective_message.reply_text(
+                "⚠️ No phone number is linked to your account.\n\n"
+                "Please contact support to bind your GCash / Maya number first.",
+                reply_markup=cancel_keyboard(CB["main_menu"]),
+            )
+            return -1
+        context.user_data["withdraw"]["address"] = phone
+        label = "GCash 📱" if method == "GCASH" else "Maya 💜"
+        await update.effective_message.reply_text(
+            f"📝 *Confirm Withdrawal*\n\n"
+            f"Method: *{label}*\n"
+            f"Amount: *{fmt_money(amount)}*\n"
+            f"Payout to: *{phone}* _(your registered number — cannot be changed)_\n\n"
+            f"The admin will review and transfer the funds to your {label} account.",
+            reply_markup=confirm_keyboard("WD:YES", "WD:NO"), parse_mode="Markdown",
+        )
+        return State.WITHDRAW_CONFIRM
+    else:
+        # Crypto — ask for wallet address
+        await update.effective_message.reply_text(
+            "Enter the *crypto wallet address* you want to receive payment on.",
+            reply_markup=cancel_keyboard(CB["main_menu"]), parse_mode="Markdown",
+        )
+        return State.WITHDRAW_ENTER_ADDRESS
 
 
 @not_banned
@@ -618,6 +741,7 @@ async def withdraw_enter_address(update: Update, context: ContextTypes.DEFAULT_T
     wd = context.user_data["withdraw"]
     await update.effective_message.reply_text(
         f"📝 *Confirm Withdrawal*\n\n"
+        f"Method: *Crypto ₿*\n"
         f"Amount: *{fmt_money(wd['amount'])}*\n"
         f"Address: `{address}`\n\n"
         f"The admin will review and process your payment manually.",
@@ -642,6 +766,10 @@ async def withdraw_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await query.edit_message_text("❌ Insufficient balance. Cancelled.", reply_markup=back_to_main())
         context.user_data.pop("withdraw", None)
         return -1
+
+    method = wd.get("method", "CRYPTO")
+    method_label = "GCash" if method == "GCASH" else ("Maya" if method == "MAYA" else "Crypto")
+
     db.update_balance(user.id, -float(wd["amount"]))
     tx_id = db.create_transaction(
         user_id=user.id,
@@ -649,14 +777,15 @@ async def withdraw_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         amount=-float(wd["amount"]),
         status="pending",
         currency="PHP",
-        wallet_address=wd["address"],
-        note="User withdrawal request",
+        wallet_address=wd.get("address", ""),
+        note=f"User withdrawal via {method_label}",
     )
     admin_text = (
         f"💸 *New withdrawal request* `#{tx_id}`\n\n"
         f"User: {fmt_user(record)}\n"
         f"Amount: *{fmt_money(wd['amount'])}*\n"
-        f"Address: `{wd['address']}`\n"
+        f"Method: *{method_label}*\n"
+        f"Payout to: `{wd.get('address', '-')}`\n"
     )
     from keyboards.admin_kb import admin_withdrawal_actions_keyboard
     for admin_id in CONFIG.admin_ids:
@@ -673,7 +802,7 @@ async def withdraw_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     context.user_data.pop("withdraw", None)
     await query.edit_message_text(
         f"✅ Withdrawal request *#{tx_id}* submitted!\n\n"
-        f"*{fmt_money(wd['amount'])}* — admin will process shortly.",
+        f"*{fmt_money(wd['amount'])}* via {method_label} — admin will process shortly.",
         reply_markup=back_to_main(), parse_mode="Markdown",
     )
     return -1
@@ -733,3 +862,5 @@ async def referral(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         reply_markup=back_to_main(), parse_mode="Markdown",
     )
     return -1
+
+

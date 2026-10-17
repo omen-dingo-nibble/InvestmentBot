@@ -1,50 +1,54 @@
-{% extends "base.html" %}
-{% block title %}マイアカウント{% endblock %}
+﻿{% extends "base.html" %}
+{% block title %}My Account{% endblock %}
+{% block topbar_title %}My Account{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h4><i class="bi bi-person-circle me-2 text-green"></i>マイアカウント</h4>
+    <div>
+        <h4><i class="bi bi-person-circle me-2 text-accent"></i>My Account</h4>
+        <div class="page-sub">Manage your admin credentials</div>
+    </div>
 </div>
 
 <div class="row">
     <div class="col-md-5">
         <div class="card mb-4">
-            <div class="card-header"><i class="bi bi-person me-2"></i>アカウント情報</div>
+            <div class="card-header"><i class="bi bi-person me-2"></i>Account Info</div>
             <div class="card-body">
-                <dl class="row mb-0" style="font-size:.875rem;">
-                    <dt class="col-5" style="color:var(--gyo-muted);">Username</dt>
+                <dl class="row mb-0" style="font-size:.875rem;row-gap:.5rem;">
+                    <dt class="col-5 text-muted">Username</dt>
                     <dd class="col-7"><code>{{ admin.username }}</code></dd>
-                    <dt class="col-5" style="color:var(--gyo-muted);">Display Name</dt>
+                    <dt class="col-5 text-muted">Display Name</dt>
                     <dd class="col-7">{{ admin.display_name or '—' }}</dd>
-                    <dt class="col-5" style="color:var(--gyo-muted);">Role</dt>
+                    <dt class="col-5 text-muted">Role</dt>
                     <dd class="col-7">
-                        <span class="badge" style="background:rgba(82,183,136,.2);color:var(--gyo-green);border:1px solid rgba(82,183,136,.3);">{{ admin.role }}</span>
+                        <span class="badge badge-active">{{ admin.role }}</span>
                     </dd>
-                    <dt class="col-5" style="color:var(--gyo-muted);">Last Login</dt>
+                    <dt class="col-5 text-muted">Last Login</dt>
                     <dd class="col-7">{{ admin.last_login | timeago if admin.last_login else 'Never' }}</dd>
                 </dl>
             </div>
         </div>
 
         <div class="card">
-            <div class="card-header"><i class="bi bi-lock me-2"></i>パスワード変更</div>
+            <div class="card-header"><i class="bi bi-lock me-2"></i>Change Password</div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
-                        <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">現在のパスワード Current Password</label>
+                        <label class="form-label">Current Password</label>
                         <input type="password" name="current_password" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">新パスワード New Password</label>
+                        <label class="form-label">New Password</label>
                         <input type="password" name="new_password" class="form-control" required minlength="6">
                     </div>
                     <div class="mb-4">
-                        <label class="form-label" style="color:var(--gyo-muted);font-size:.8rem;">確認 Confirm New Password</label>
+                        <label class="form-label">Confirm New Password</label>
                         <input type="password" name="confirm_password" class="form-control" required>
                     </div>
-                    <button type="submit" class="btn btn-gold w-100">
-                        <i class="bi bi-check-lg me-2"></i>更新 Update Password
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg me-2"></i>Update Password
                     </button>
                 </form>
             </div>
@@ -54,42 +58,37 @@
     <div class="col-md-7">
         <div class="card">
             <div class="card-header">
-                <span style="font-size:1.1rem;margin-right:8px;">🍵</span>
-                玉露 Gyokuro Investment Platform
+                <span style="margin-right:8px;">🐼</span>
+                Gyokuro Investment Platform
             </div>
             <div class="card-body">
-                <p style="color:var(--gyo-muted);font-size:.875rem;margin-bottom:1.25rem;">
-                    Gyokuro is a premium Japanese investment platform. Grow your wealth
-                    with our carefully crafted investment plans — like the finest shade-grown tea,
-                    your returns mature with time.
+                <p class="text-muted" style="font-size:.875rem;margin-bottom:1.25rem;">
+                    Gyokuro is a premium investment platform. Grow your wealth
+                    with our carefully structured investment plans and daily returns.
                 </p>
 
-                <div style="border:1px solid var(--gyo-border);border-radius:12px;overflow:hidden;">
+                <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">
                     {% set features = [
-                        ('玉露 Starter', '₱99 entry plan — accessible for all investors', 'bi-leaf'),
+                        ('Starter Plan', 'Accessible entry plan for all investors', 'bi-play-circle'),
                         ('Daily Returns', 'Earnings credited every 24 hours automatically', 'bi-graph-up-arrow'),
-                        ('Referral System', 'Multi-level commission on your network\'s investments', 'bi-people'),
+                        ('Referral Program', 'Commission on your network\'s investments', 'bi-people'),
                         ('Web Dashboard', 'Mobile-first user portal at /app', 'bi-phone'),
                     ] %}
                     {% for title, desc, icon in features %}
-                    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--gyo-border);">
-                        <div style="width:36px;height:36px;background:var(--gyo-glow);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <i class="bi {{ icon }} text-green"></i>
+                    <div class="d-flex align-items-center gap-3 p-3 {{ 'border-top' if not loop.first else '' }}" style="border-color:var(--border)!important;">
+                        <div style="width:34px;height:34px;border-radius:8px;background:var(--accent-glow);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="bi {{ icon }} text-accent"></i>
                         </div>
                         <div>
-                            <div style="font-size:.875rem;font-weight:600;">{{ title }}</div>
-                            <div style="font-size:.75rem;color:var(--gyo-muted);">{{ desc }}</div>
+                            <div style="font-size:.83rem;font-weight:600;">{{ title }}</div>
+                            <div class="text-muted" style="font-size:.75rem;">{{ desc }}</div>
                         </div>
                     </div>
                     {% endfor %}
-                </div>
-
-                <div style="margin-top:1.25rem;padding:12px 16px;background:var(--gyo-glow);border-radius:10px;border:1px solid rgba(82,183,136,.2);">
-                    <div style="font-size:.78rem;color:var(--gyo-muted);">User Portal</div>
-                    <div style="font-size:.9rem;font-weight:600;color:var(--gyo-light);">/app — Mobile investment dashboard</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+

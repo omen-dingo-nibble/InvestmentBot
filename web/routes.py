@@ -1,4 +1,4 @@
-"""Web admin routes for High Caliber Construction NW."""
+﻿"""Web admin routes for Gyokuro Investment Bot."""
 from __future__ import annotations
 
 import json
@@ -1222,13 +1222,15 @@ def plan_delete(plan_id: int):
 def settings():
     db = get_db()
     if request.method == "POST":
-        # Handle QR image uploads first
+        # Handle QR image uploads first (crypto + GCash + Maya)
         qr_fields = {
             "qr_btc": "qr_btc",
             "qr_eth": "qr_eth",
             "qr_usdt_trc20": "qr_usdt_trc20",
             "qr_usdt_erc20": "qr_usdt_erc20",
             "qr_ltc": "qr_ltc",
+            "qr_gcash": "qr_gcash",
+            "qr_maya": "qr_maya",
         }
         for field, setting_key in qr_fields.items():
             saved_name = _save_qr(field)
@@ -1245,13 +1247,28 @@ def settings():
             "crypto_usdt_trc20_address": request.form.get("crypto_usdt_trc20_address", "").strip(),
             "crypto_usdt_erc20_address": request.form.get("crypto_usdt_erc20_address", "").strip(),
             "crypto_ltc_address": request.form.get("crypto_ltc_address", "").strip(),
+            # Per-crypto enable toggles (checkboxes → "on" when checked, absent when unchecked)
+            "crypto_btc_enabled": "1" if request.form.get("crypto_btc_enabled") == "on" else "0",
+            "crypto_eth_enabled": "1" if request.form.get("crypto_eth_enabled") == "on" else "0",
+            "crypto_usdt_trc20_enabled": "1" if request.form.get("crypto_usdt_trc20_enabled") == "on" else "0",
+            "crypto_usdt_erc20_enabled": "1" if request.form.get("crypto_usdt_erc20_enabled") == "on" else "0",
+            "crypto_ltc_enabled": "1" if request.form.get("crypto_ltc_enabled") == "on" else "0",
+            # E-wallet toggles
+            "gcash_enabled": "1" if request.form.get("gcash_enabled") == "on" else "0",
+            "maya_enabled": "1" if request.form.get("maya_enabled") == "on" else "0",
+            # E-wallet account info
+            "gcash_account_number": request.form.get("gcash_account_number", "").strip(),
+            "gcash_account_name": request.form.get("gcash_account_name", "").strip(),
+            "maya_account_number": request.form.get("maya_account_number", "").strip(),
+            "maya_account_name": request.form.get("maya_account_name", "").strip(),
+            # Operational
             "signup_bonus_php": request.form.get("signup_bonus_php", "50").strip(),
             "usd_to_php_rate": request.form.get("usd_to_php_rate", "56").strip(),
             "min_deposit_usd": request.form.get("min_deposit_usd", "10").strip(),
             "min_withdrawal_usd": request.form.get("min_withdrawal_usd", "5").strip(),
             "referral_bonus_percent": request.form.get("referral_bonus_percent", "5").strip(),
             "deduct_referral_from_investor": request.form.get("deduct_referral_from_investor") == "on",
-            "support_handle": request.form.get("support_handle", "@HCCNWAdmin").strip(),
+            "support_handle": request.form.get("support_handle", "@italiaelitetradingbot").strip(),
             "maintenance_mode": request.form.get("maintenance_mode") == "on",
             "welcome_message": request.form.get("welcome_message", "").strip(),
             "site_urls": request.form.get("site_urls", "").strip(),
@@ -1379,3 +1396,4 @@ def account():
             flash("Password updated.", "success")
         return redirect(url_for("main.account"))
     return render_template("account.html", admin=admin)
+

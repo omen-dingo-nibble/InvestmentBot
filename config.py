@@ -1,4 +1,4 @@
-"""Centralized configuration for High Caliber Construction NW Investment Bot.
+"""Centralized configuration for Gyokuro Investment Bot.
 
 Every runtime setting lives here so the rest of the codebase never touches
 ``os.environ`` directly.
@@ -23,7 +23,7 @@ BRAND_NAME = "Gyokuro"
 BRAND_SHORT = "Gyokuro"
 BRAND_TAGLINE = "Grow Your Wealth. Sip the Returns."
 BRAND_WEBSITE = "https://gyokuro.app"
-BRAND_SUPPORT = "@GyokuroSupport"
+BRAND_SUPPORT = "@italiaelitetradingbot"
 
 CREW = [
     {
@@ -179,7 +179,7 @@ class CryptoConfig:
 @dataclass
 class Config:
     bot_token: str = ""
-    bot_username: str = "HCCNWBot"
+    bot_username: str = "italiaelitetradingbot"
     admin_ids: List[int] = field(default_factory=list)
     crypto: CryptoConfig = field(default_factory=CryptoConfig)
     min_deposit_usd: float = 10.0
@@ -198,7 +198,7 @@ class Config:
     def load(cls) -> "Config":
         cfg = cls()
         cfg.bot_token = os.getenv("BOT_TOKEN", "").strip()
-        cfg.bot_username = os.getenv("BOT_USERNAME", "HCCNWBot").strip()
+        cfg.bot_username = os.getenv("BOT_USERNAME", "italiaelitetradingbot").strip()
         cfg.admin_ids = _int_list(os.getenv("ADMIN_IDS", ""))
 
         cfg.crypto = CryptoConfig(
