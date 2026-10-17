@@ -1,5 +1,5 @@
 ﻿{% extends "portal/base.html" %}
-{% block title %}Home — Gyokuro{% endblock %}
+{% block title %}Home — KKKPH{% endblock %}
 
 {% block content %}
 <!-- Balance Card -->
@@ -39,7 +39,7 @@
         <div class="step-icon {% if has_dep %}done{% else %}active{% endif %}">
             {% if has_dep %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-wallet2"></i>{% endif %}
         </div>
-        <div class="step-text"><strong>Top up</strong><small>Add money to your Gyokuro balance.</small></div>
+        <div class="step-text"><strong>Top up</strong><small>Add money to your KKKPH balance.</small></div>
         {% if not has_dep %}<a href="{{ url_for('portal.deposit') }}" class="step-arrow"><i class="bi bi-arrow-right"></i></a>{% endif %}
     </div>
     <div class="gs-step">

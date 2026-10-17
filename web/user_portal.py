@@ -1,4 +1,4 @@
-﻿"""User-facing investment portal for Gyokuro.
+﻿"""User-facing investment portal for KKKPH.
 
 Users log in via a one-time link sent to them by the Telegram bot (/weblogin).
 After the link is consumed the user_id is stored in the session.
@@ -614,7 +614,7 @@ def invite():
     tg_link = f"https://t.me/{bot_username}?start=ref_{user['referral_code']}"
 
     # Web mirror links: read comma-separated site_urls setting
-    # e.g. "https://gyokuro.app,https://mirror1.gyokuro.com,https://gyokuro.io"
+    # e.g. "https://kkkph.site,https://mirror1.kkkph.site"
     site_urls_raw = db.get_setting("site_urls", "").strip()
     web_mirror_links = []
     if site_urls_raw:
@@ -675,7 +675,7 @@ def me():
     min_wd = float(db.get_setting("min_withdrawal_usd", 5.0))
     min_dep = float(db.get_setting("min_deposit_usd", 500.0))
     bot_username = db.get_setting("bot_username", "italiaelitetradingbot")
-    support = db.get_setting("support_handle", "@GyokuroSupport")
+    support = db.get_setting("support_handle", "@italiaelitetradingbot")
 
     # Withdrawal readiness
     balance = float(user["balance"])

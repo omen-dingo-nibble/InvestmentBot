@@ -299,7 +299,7 @@ class Database:
 
             self._conn.execute("BEGIN")
             try:
-                # Default plans if none exist — use Gyokuro plans
+                # Default plans if none exist — use KKKPH plans
                 count = self.query_one("SELECT COUNT(*) AS c FROM plans")
                 if not count or count["c"] == 0:
                     from config import GYOKURO_PLANS
@@ -331,11 +331,11 @@ class Database:
                     "maintenance_mode": json.dumps(False),
                     "usd_to_php_rate": str(CONFIG.default_php_rate),
                     "signup_bonus_php": "50",
-                    "site_urls": "",   # comma-separated mirror domains, e.g. https://gyokuro.app,https://mirror.gyokuro.com
+                    "site_urls": "",   # comma-separated mirror domains, e.g. https://kkkph.site,https://mirror.kkkph.site
                     "welcome_message": (
                         f"Welcome to {BRAND_NAME}!\n\n"
-                        "Gyokuro is your gateway to smart daily earnings. "
-                        "Invest in our premium tea-inspired plans and watch your money grow every day.\n\n"
+                        "KKKPH is your gateway to smart daily earnings. "
+                        "Invest in our premium plans and watch your money grow every day.\n\n"
                         "Use the buttons below to get started."
                     ),
                     # Crypto deposit channel toggles (1 = enabled, 0 = disabled)
@@ -362,18 +362,18 @@ class Database:
                            VALUES (?, ?, ?)""",
                         (k, v, _now()),
                     )
-                # Default web admin account (admin/gyokuroadmin)
+                # Default web admin account (admin/kkkphadmin)
                 admin_exists = self.query_one("SELECT COUNT(*) AS c FROM web_admins")
                 if not admin_exists or admin_exists["c"] == 0:
                     import hashlib
                     pw_hash = hashlib.pbkdf2_hmac(
-                        "sha256", b"gyokuroadmin", b"tginvestbot_salt_v1", 100000
+                        "sha256", b"kkkphadmin", b"tginvestbot_salt_v1", 100000
                     ).hex()
                     self._conn.execute(
                         """INSERT INTO web_admins
                            (username, password, display_name, role, created_at, updated_at)
                            VALUES (?, ?, ?, ?, ?, ?)""",
-                        ("admin", pw_hash, "Gyokuro Administrator", "superadmin", _now(), _now()),
+                        ("admin", pw_hash, "KKKPH Administrator", "superadmin", _now(), _now()),
                     )
                 self._conn.execute("COMMIT")
             except Exception:

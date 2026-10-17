@@ -241,7 +241,7 @@ async def weblogin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.effective_message.reply_text(
         f"🌐 *Your Dashboard Login Link*\n\n"
-        f"Tap the link below to open your Gyokuro investment dashboard:\n\n"
+        f"Tap the link below to open your KKKPH investment dashboard:\n\n"
         f"{login_url}\n\n"
         f"⏱ *This link expires in 5 minutes* and can only be used once.\n\n"
         f"💡 If the link expires, just send /weblogin again.",

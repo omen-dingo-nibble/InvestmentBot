@@ -1,4 +1,4 @@
-"""HTTP-layer stress & security test v2 for Gyokuro InvestmentBot.
+"""HTTP-layer stress & security test v2 for KKKPH InvestmentBot.
 
 Extends the original web_stress_test.py with additional coverage of:
 
@@ -94,7 +94,7 @@ S = Stats()
 # ── Test helpers ──────────────────────────────────────────────────────────
 
 ADMIN_USER = "admin"
-ADMIN_PASS = "gyokuroadmin"
+ADMIN_PASS = "kkkphadmin"
 _phone_counter = 70_000_000  # separate range from v1 test
 
 
@@ -1019,7 +1019,7 @@ def test_input_boundary_conditions(app):
 
 def main() -> int:
     print(f"\n{BOLD}{'═'*60}")
-    print(" Gyokuro — HTTP Stress & Security Test Suite v2")
+    print(" KKKPH — HTTP Stress & Security Test Suite v2")
     print(f"{'═'*60}{W}")
     print(f" Test DB: {TEST_DB}")
 

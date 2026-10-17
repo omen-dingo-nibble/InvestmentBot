@@ -1,4 +1,4 @@
-"""Centralized configuration for Gyokuro Investment Bot.
+"""Centralized configuration for KKKPH Investment Bot.
 
 Every runtime setting lives here so the rest of the codebase never touches
 ``os.environ`` directly.
@@ -17,28 +17,28 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 # ---------------------------------------------------------------------------
-# Branding constants for Gyokuro
+# Branding constants for KKKPH
 # ---------------------------------------------------------------------------
-BRAND_NAME = "Gyokuro"
-BRAND_SHORT = "Gyokuro"
+BRAND_NAME = "KKKPH"
+BRAND_SHORT = "KKKPH"
 BRAND_TAGLINE = "Grow Your Wealth. Sip the Returns."
-BRAND_WEBSITE = "https://gyokuro.app"
+BRAND_WEBSITE = "https://kkkph.site"
 BRAND_SUPPORT = "@italiaelitetradingbot"
 
 CREW = [
     {
-        "name": "Gyokuro Team",
+        "name": "KKKPH Team",
         "title": "Investment Specialists",
         "bio": "A dedicated team committed to growing your wealth through smart, premium investment plans.",
     },
 ]
 
 # ---------------------------------------------------------------------------
-# Gyokuro Investment Plans with product images
+# KKKPH Investment Plans with product images
 # ---------------------------------------------------------------------------
 GYOKURO_PLANS = [
     {
-        "name": "Gyokuro Starter",
+        "name": "KKKPH Starter",
         "description": "Entry-level premium plan. Steady daily returns to begin your investment journey.",
         "min_amount": 99.0,
         "max_amount": 999.0,
@@ -49,7 +49,7 @@ GYOKURO_PLANS = [
         "image": "gyokuro_1.jpg",
     },
     {
-        "name": "Gyokuro Silver",
+        "name": "KKKPH Silver",
         "description": "Mid-tier plan with enhanced returns for growing investors.",
         "min_amount": 1000.0,
         "max_amount": 4999.0,
@@ -60,7 +60,7 @@ GYOKURO_PLANS = [
         "image": "gyokuro_2.jpg",
     },
     {
-        "name": "Gyokuro Gold",
+        "name": "KKKPH Gold",
         "description": "Premium plan with superior yields over 45 days.",
         "min_amount": 5000.0,
         "max_amount": 24999.0,
@@ -71,7 +71,7 @@ GYOKURO_PLANS = [
         "image": "gyokuro_3.jpg",
     },
     {
-        "name": "Gyokuro Platinum",
+        "name": "KKKPH Platinum",
         "description": "High-yield 60-day plan for serious investors seeking maximum growth.",
         "min_amount": 25000.0,
         "max_amount": 99999.0,
@@ -82,7 +82,7 @@ GYOKURO_PLANS = [
         "image": "gyokuro_4.jpg",
     },
     {
-        "name": "Gyokuro Diamond",
+        "name": "KKKPH Diamond",
         "description": "Elite 90-day plan with exceptional daily returns for top-tier investors.",
         "min_amount": 100000.0,
         "max_amount": 499999.0,
@@ -93,7 +93,7 @@ GYOKURO_PLANS = [
         "image": "gyokuro_5.jpg",
     },
     {
-        "name": "Gyokuro Black",
+        "name": "KKKPH Black",
         "description": "The pinnacle of investment — exclusive 90-day plan for premium members.",
         "min_amount": 500000.0,
         "max_amount": 5000000.0,
@@ -104,7 +104,7 @@ GYOKURO_PLANS = [
         "image": "gyokuro_6.jpg",
     },
     {
-        "name": "Gyokuro Reserve",
+        "name": "KKKPH Reserve",
         "description": "Special limited plan with flexible investment range.",
         "min_amount": 500.0,
         "max_amount": 2999.0,

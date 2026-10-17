@@ -1,4 +1,4 @@
-"""Production-readiness stress & security test for Gyokuro / Railway.
+"""Production-readiness stress & security test for KKKPH / Railway.
 
 Design principle: test fixtures are created directly in the DB so tests
 never hit rate limits. Only the flows being tested touch HTTP.
@@ -105,7 +105,7 @@ S = Stats()
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 ADMIN_USER = "admin"
-ADMIN_PASS = "gyokuroadmin"
+ADMIN_PASS = "kkkphadmin"
 _phone_seq = 90_000_000
 
 
@@ -452,7 +452,7 @@ def test_portal_deposit(app: object) -> None:
         }, follow_redirects=True)
         S.expect("Valid deposit -> 200", r.status_code == 200, f"got {r.status_code}")
         S.expect("Deposit response OK",
-                 b"Deposit" in r.data or b"submitted" in r.data.lower() or b"Gyokuro" in r.data)
+                 b"Deposit" in r.data or b"submitted" in r.data.lower() or b"KKKPH" in r.data)
 
         # Below minimum
         csrf = fresh_csrf(c)
@@ -1010,7 +1010,7 @@ def test_concurrent_admin_reads(app: object, n: int = 30) -> None:
 def main() -> int:
     sys.stdout.write(
         f"\n{BOLD}{'='*62}\n"
-        f" Gyokuro - Production Stress & Security Test Suite\n"
+        f" KKKPH - Production Stress & Security Test Suite\n"
         f" Railway hosting hardening included\n"
         f"{'='*62}{W}\n"
         f" Test DB: {TEST_DB}\n\n"

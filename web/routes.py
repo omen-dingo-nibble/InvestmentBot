@@ -1,4 +1,4 @@
-﻿"""Web admin routes for Gyokuro Investment Bot."""
+﻿"""Web admin routes for KKKPH Investment Bot."""
 from __future__ import annotations
 
 import json

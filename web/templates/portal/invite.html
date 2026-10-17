@@ -1,5 +1,5 @@
 ﻿{% extends "portal/base.html" %}
-{% block title %}Invite Friends — Gyokuro{% endblock %}
+{% block title %}Invite Friends — KKKPH{% endblock %}
 
 {% block topbar %}
 <div class="top-bar">
@@ -242,9 +242,9 @@
 <script>
 function shareLink() {
     const url = '{{ tg_link }}';
-    const text = 'Join Gyokuro and start earning daily returns! Use my referral link:';
+    const text = 'Join KKKPH and start earning daily returns! Use my referral link:';
     if (navigator.share) {
-        navigator.share({ title: 'Join Gyokuro', text, url }).catch(() => {});
+        navigator.share({ title: 'Join KKKPH', text, url }).catch(() => {});
     } else {
         copyText(url, event.currentTarget || event.target);
     }
