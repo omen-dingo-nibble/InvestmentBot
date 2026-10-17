@@ -196,16 +196,17 @@ async def admin_plan_toggle(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> int:
     query = update.callback_query
-    await query.answer()
+    # Answer once with the result message — do NOT call answer() twice
     plan_id = int(query.data.split(":", 2)[2])
     db = get_db()
     plan = db.get_plan(plan_id)
     if not plan:
+        await query.answer()
         return await admin_plans(update, context)
     db.update_plan(plan_id, is_active=0 if plan["is_active"] else 1)
     plan = db.get_plan(plan_id)
     await query.answer(
-        f"Plan {plan['name']} is now "
+        f"Plan '{plan['name']}' is now "
         f"{'active' if plan['is_active'] else 'inactive'}.",
         show_alert=True,
     )

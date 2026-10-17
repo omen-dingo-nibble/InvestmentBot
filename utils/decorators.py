@@ -36,7 +36,7 @@ def admin_only(func: Callable) -> Callable:
                 await update.callback_query.answer("Admins only.", show_alert=True)
             elif update.effective_message:
                 await update.effective_message.reply_text("This action is for admins only.")
-            return None
+            return -1   # ConversationHandler.END — don't leave conversation stuck
         return await func(update, context, *args, **kwargs)
 
     return wrapper
@@ -57,7 +57,7 @@ def not_banned(func: Callable) -> Callable:
                     await update.effective_message.reply_text(
                         "Your account is suspended. Please contact support."
                     )
-                return None
+                return -1   # ConversationHandler.END — don't leave user stuck in a state
         return await func(update, context, *args, **kwargs)
 
     return wrapper

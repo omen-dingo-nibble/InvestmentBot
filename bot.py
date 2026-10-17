@@ -253,22 +253,20 @@ def build_application() -> Application:
         states={
             State.DEPOSIT_SELECT_CURRENCY: [
                 CallbackQueryHandler(deposit_select_currency, pattern=f"^{CB['deposit_currency']}"),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
             State.DEPOSIT_ENTER_AMOUNT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_enter_amount),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
             State.DEPOSIT_UPLOAD_RECEIPT: [
                 MessageHandler(
                     (filters.PHOTO | filters.Document.ALL | filters.TEXT) & ~filters.COMMAND,
                     deposit_receive_receipt,
                 ),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
+            CommandHandler("start", start),
             CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
         ],
         per_user=True,
@@ -281,19 +279,17 @@ def build_application() -> Application:
         states={
             State.INVEST_SELECT_PLAN: [
                 CallbackQueryHandler(invest_select_plan, pattern=f"^{CB['invest_plan']}"),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
             State.INVEST_ENTER_AMOUNT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, invest_enter_amount),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
             State.INVEST_CONFIRM: [
                 CallbackQueryHandler(invest_confirm_callback, pattern=r"^INVEST:"),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
+            CommandHandler("start", start),
             CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
         ],
     )
@@ -304,23 +300,20 @@ def build_application() -> Application:
         states={
             State.WITHDRAW_SELECT_METHOD: [
                 CallbackQueryHandler(withdraw_select_method, pattern=f"^{CB['withdraw_method']}"),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
             State.WITHDRAW_ENTER_AMOUNT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_enter_amount),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
             State.WITHDRAW_ENTER_ADDRESS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_enter_address),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
             State.WITHDRAW_CONFIRM: [
                 CallbackQueryHandler(withdraw_confirm, pattern=r"^WD:"),
-                CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
             ],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
+            CommandHandler("start", start),
             CallbackQueryHandler(show_main_menu, pattern=f"^{CB['main_menu']}$"),
         ],
     )
@@ -405,7 +398,6 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("admin", admin_dashboard))
     app.add_handler(deposit_handler)
     app.add_handler(invest_handler)
-    add_handler = app.add_handler  # noqa: F841
     app.add_handler(withdraw_handler)
     app.add_handler(plan_create_handler)
     app.add_handler(settings_handler)
@@ -442,9 +434,18 @@ def main() -> None:
     # Railway injects PORT; fall back to WEB_PORT then 5000.
     web_port = int(os.environ.get("PORT") or os.environ.get("WEB_PORT") or "5000")
 
-    # ── 1. Start Flask web panel (non-daemon so it keeps the process alive) ──
-    # Railway sends an HTTP health-check to $PORT almost immediately after the
-    # process starts. The web server MUST answer before any Telegram call is made.
+    # ── 1. Flask runs in a BACKGROUND (daemon) thread ────────────────────────
+    #
+    # The bot must run on the main thread because:
+    #   a) asyncio signal handlers (SIGINT / SIGTERM) only work on the main thread
+    #   b) PTB's run_polling() calls set_wakeup_fd() which is main-thread-only
+    #
+    # Flask/Werkzeug has no such restriction, so it goes to the background thread.
+    # We make it daemon=True — when the main thread (bot) exits cleanly, the
+    # process exits and the web server stops with it.
+    #
+    # Railway's health-check hits $PORT shortly after startup, so we start
+    # Flask first and wait for it to bind before touching Telegram.
     web_app = create_app()
 
     def _run_web() -> None:
@@ -456,11 +457,10 @@ def main() -> None:
         except Exception as exc:
             log.exception("Web server crashed: %s", exc)
 
-    # Non-daemon: the main thread will join() this, keeping the process alive.
-    web_thread = threading.Thread(target=_run_web, daemon=False, name="web-server")
+    web_thread = threading.Thread(target=_run_web, daemon=True, name="web-server")
     web_thread.start()
 
-    # Wait up to 10 s for the port to actually open before touching Telegram.
+    # Wait up to 10 s for the port to open before touching Telegram.
     deadline = _time.time() + 10
     while _time.time() < deadline:
         try:
@@ -473,101 +473,71 @@ def main() -> None:
     else:
         log.warning("Web server did not become ready within 10 s — continuing anyway")
 
-    # ── 2. Run the Telegram bot in a daemon thread with retry + backoff ──
-    # The bot thread is a daemon so it never prevents a clean shutdown.
-    # If it crashes for any network reason, it restarts automatically.
-    # The web panel stays up regardless — its thread is non-daemon and
-    # joined on the main thread below.
+    # ── 2. Bot polling runs on the MAIN thread ───────────────────────────────
+    #
+    # Retry loop with exponential backoff. A transient Telegram network error
+    # causes a logged warning and a retry after backoff — never a process exit.
+    # Only a missing/invalid token causes a permanent stop.
 
-    def _run_bot() -> None:
-        """
-        Supervised bot loop. On any network/timeout error: log, back off, retry.
-        Only exits on SystemExit (missing token) or KeyboardInterrupt.
+    _MAX_DELAY = 60   # cap backoff at 60 s
+    delay = 5
+    attempt = 0
 
-        Retry schedule: 5 s -> 10 -> 20 -> 40 -> 60 s (capped), then 60 s forever.
-        """
-        import asyncio
+    while True:
+        attempt += 1
+        log.info("Bot start attempt #%d", attempt)
+        try:
+            bot_app = build_application()
+            register_scheduler(bot_app)
+            log.info("Bot initialised. Admin IDs: %s", CONFIG.admin_ids)
 
-        # python-telegram-bot's run_polling() drives its own asyncio event loop
-        # internally, but the background thread it runs on has no event loop
-        # by default. Create one and install it before touching PTB at all.
-        asyncio.set_event_loop(asyncio.new_event_loop())
+            # run_polling blocks until shutdown.
+            # bootstrap_retries=-1  → PTB retries getMe until Telegram responds.
+            # stop_signals=None is NOT needed here because we are on the main
+            # thread and PTB can install its SIGINT/SIGTERM handlers normally.
+            bot_app.run_polling(
+                allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True,
+                bootstrap_retries=-1,
+            )
+            # run_polling returned cleanly (SIGTERM / KeyboardInterrupt handled
+            # internally by PTB) — exit the retry loop.
+            log.info("Bot polling stopped cleanly.")
+            break
 
-        _MAX_DELAY = 60
-        delay = 5
-        attempt = 0
+        except SystemExit:
+            log.critical("Bot received SystemExit — shutting down.")
+            raise
 
-        while True:
-            attempt += 1
-            log.info("Bot start attempt #%d", attempt)
-            try:
-                bot_app = build_application()
-                register_scheduler(bot_app)
-                log.info("Bot initialised. Admin IDs: %s", CONFIG.admin_ids)
+        except telegram.error.InvalidToken:
+            log.critical("BOT_TOKEN is invalid — update it in Railway env vars.")
+            break
 
-                # bootstrap_retries=-1 tells PTB to retry getMe indefinitely
-                # on startup before entering the poll loop — no extra code needed
-                # for the very first getMe call. Our outer loop handles crashes
-                # that happen after the bot is already running.
-                bot_app.run_polling(
-                    allowed_updates=Update.ALL_TYPES,
-                    drop_pending_updates=True,   # skip messages queued during downtime
-                    bootstrap_retries=-1,        # PTB retries getMe until it succeeds
-                    close_loop=False,            # don't close the event loop on exit
-                )
-                # run_polling returned normally — clean shutdown, stop retrying.
-                log.info("Bot polling stopped cleanly — shutting down bot thread.")
-                break
+        except KeyboardInterrupt:
+            log.info("Keyboard interrupt — shutting down.")
+            break
 
-            except SystemExit:
-                # Missing / invalid token — nothing to retry.
-                log.critical("Bot exiting due to missing or invalid token.")
-                raise
+        except (
+            telegram.error.TimedOut,
+            telegram.error.NetworkError,
+            telegram.error.RetryAfter,
+        ) as exc:
+            log.warning(
+                "Bot attempt #%d — Telegram network error (%s: %s). "
+                "Retrying in %d s...",
+                attempt, type(exc).__name__, exc, delay,
+            )
+            _time.sleep(delay)
+            delay = min(delay * 2, _MAX_DELAY)
 
-            except telegram.error.InvalidToken:
-                log.critical("BOT_TOKEN is invalid — please update it in Railway env vars.")
-                break  # don't loop forever on a bad token
-
-            except KeyboardInterrupt:
-                log.info("Bot thread received KeyboardInterrupt — stopping.")
-                break
-
-            except (
-                telegram.error.TimedOut,
-                telegram.error.NetworkError,
-                telegram.error.RetryAfter,
-            ) as exc:
-                log.warning(
-                    "Bot attempt #%d failed — Telegram network error (%s: %s). "
-                    "Retrying in %d s...",
-                    attempt, type(exc).__name__, exc, delay,
-                )
-                _time.sleep(delay)
-                delay = min(delay * 2, _MAX_DELAY)
-                # Re-create a fresh event loop for the next attempt —
-                # the previous one may be in a broken state.
-                asyncio.set_event_loop(asyncio.new_event_loop())
-
-            except Exception as exc:
-                log.error(
-                    "Bot attempt #%d crashed unexpectedly (%s: %s). "
-                    "Retrying in %d s...",
-                    attempt, type(exc).__name__, exc, delay,
-                )
-                _time.sleep(delay)
-                delay = min(delay * 2, _MAX_DELAY)
-                # Re-create a fresh event loop for the next attempt.
-                asyncio.set_event_loop(asyncio.new_event_loop())
-
-    bot_thread = threading.Thread(target=_run_bot, daemon=True, name="telegram-bot")
-    bot_thread.start()
-
-    # ── 3. Keep main thread alive by joining the non-daemon web thread ──
-    # If Werkzeug exits (which it shouldn't), the process exits too.
-    try:
-        web_thread.join()
-    except KeyboardInterrupt:
-        log.info("Main thread received KeyboardInterrupt — exiting.")
+        except Exception as exc:
+            log.error(
+                "Bot attempt #%d crashed unexpectedly (%s: %s). "
+                "Retrying in %d s...",
+                attempt, type(exc).__name__, exc, delay,
+            )
+            _time.sleep(delay)
+            delay = min(delay * 2, _MAX_DELAY)
 
 
 if __name__ == "__main__":
