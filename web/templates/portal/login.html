@@ -9,18 +9,18 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
-            --gyo-green:      #1DB954;
-            --gyo-green-dark: #15883D;
-            --gyo-green-glow: rgba(29,185,84,.18);
-            --gyo-navy:       #0A0F1E;
-            --gyo-surface:    #111827;
-            --gyo-card:       #1A2235;
-            --gyo-card2:      #1F2A40;
-            --gyo-border:     #2A3450;
-            --gyo-text:       #F0F4FF;
-            --gyo-muted:      #8896B3;
-            --gyo-gold:       #F59E0B;
-            --gyo-red:        #EF4444;
+            --green:      #1DB954;
+            --green-dark: #15883D;
+            --green-glow: rgba(29,185,84,.18);
+            --navy:       #0A0F1E;
+            --surface:    #111827;
+            --card:       #1A2235;
+            --card2:      #1F2A40;
+            --border:     #2A3450;
+            --text:       #F0F4FF;
+            --muted:      #8896B3;
+            --gold:       #F59E0B;
+            --red:        #EF4444;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,16 +29,16 @@
             min-height: 100vh;
             background: #060b13;
             font-family: 'Inter', system-ui, sans-serif;
-            color: var(--gyo-text);
+            color: var(--text);
         }
 
-        /* â”€â”€ Layout shell â”€â”€ */
+        /* ── Layout shell ── */
         .auth-shell {
             display: flex;
             min-height: 100vh;
         }
 
-        /* Left panel â€” decorative, hidden on mobile */
+        /* Left panel — decorative, hidden on mobile */
         .auth-left {
             display: none;
         }
@@ -74,37 +74,38 @@
             }
         }
 
+        /* Brand row */
         .left-brand {
             display: flex;
             align-items: center;
             gap: 12px;
+            margin-bottom: 48px;
         }
 
         .left-brand .logo-mark {
             width: 44px; height: 44px;
-            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            background: linear-gradient(135deg, #1a2f1a, #2d5a2d);
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: .75rem; font-weight: 800; color: #fff;
-            letter-spacing: 0; line-height: 1.2; text-align: center;
-            box-shadow: 0 0 20px var(--gyo-green-glow);
+            font-size: 1.5rem; line-height: 1;
+            box-shadow: 0 0 20px var(--green-glow);
+            flex-shrink: 0;
         }
 
         .left-brand .brand-wordmark {
             font-size: 1.3rem;
             font-weight: 800;
-            color: var(--gyo-text);
+            color: var(--text);
             letter-spacing: -.3px;
         }
 
-        .left-hero {
-            z-index: 1;
-        }
+        /* Hero */
+        .left-hero { z-index: 1; }
 
         .left-hero .hero-tag {
             display: inline-block;
-            background: var(--gyo-green-glow);
-            color: var(--gyo-green);
+            background: var(--green-glow);
+            color: var(--green);
             font-size: .72rem;
             font-weight: 700;
             letter-spacing: 1px;
@@ -118,22 +119,55 @@
             font-size: 2.6rem;
             font-weight: 800;
             line-height: 1.2;
-            color: var(--gyo-text);
+            color: var(--text);
             margin-bottom: 16px;
         }
 
-        .left-hero h1 .accent {
-            color: var(--gyo-green);
-        }
+        .left-hero h1 .accent { color: var(--green); }
 
         .left-hero p {
             font-size: .95rem;
-            color: var(--gyo-muted);
+            color: var(--muted);
             line-height: 1.6;
             max-width: 380px;
             margin-bottom: 32px;
         }
 
+        /* Plan mini cards */
+        .plan-showcase {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+
+        .plan-mini {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 12px;
+        }
+
+        .plan-mini .pm-name {
+            font-size: .72rem;
+            color: var(--muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .plan-mini .pm-roi {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--green);
+        }
+
+        .plan-mini .pm-dur {
+            font-size: .68rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Feature list */
         .feature-list {
             display: flex;
             flex-direction: column;
@@ -150,7 +184,7 @@
             width: 38px; height: 38px;
             border-radius: 10px;
             background: rgba(255,255,255,.04);
-            border: 1px solid var(--gyo-border);
+            border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
             font-size: 1rem;
             flex-shrink: 0;
@@ -158,55 +192,23 @@
 
         .feature-item .fi-text {
             font-size: .88rem;
-            color: var(--gyo-muted);
+            color: var(--muted);
             line-height: 1.4;
         }
 
         .feature-item .fi-text strong {
-            color: var(--gyo-text);
+            color: var(--text);
             font-weight: 600;
         }
 
+        /* Footer */
         .left-footer {
             font-size: .75rem;
             color: rgba(136,150,179,.4);
             z-index: 1;
         }
 
-        .plan-showcase {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 32px;
-        }
-
-        .plan-mini {
-            background: var(--gyo-card);
-            border: 1px solid var(--gyo-border);
-            border-radius: 14px;
-            padding: 14px 12px;
-        }
-
-        .plan-mini .pm-name {
-            font-size: .72rem;
-            color: var(--gyo-muted);
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-
-        .plan-mini .pm-roi {
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: var(--gyo-green);
-        }
-
-        .plan-mini .pm-dur {
-            font-size: .68rem;
-            color: var(--gyo-muted);
-            margin-top: 2px;
-        }
-
-        /* â”€â”€ Right panel â€” auth form â”€â”€ */
+        /* ── Right panel — auth form ── */
         .auth-right {
             width: 100%;
             display: flex;
@@ -215,7 +217,7 @@
             align-items: center;
             padding: 24px 20px;
             min-height: 100vh;
-            background: var(--gyo-navy);
+            background: var(--navy);
         }
 
         @media (min-width: 900px) {
@@ -223,8 +225,8 @@
                 width: 460px;
                 flex-shrink: 0;
                 padding: 40px 48px;
-                background: var(--gyo-surface);
-                border-left: 1px solid var(--gyo-border);
+                background: var(--surface);
+                border-left: 1px solid var(--border);
             }
         }
 
@@ -247,24 +249,21 @@
 
         .mobile-brand .logo-mark {
             width: 40px; height: 40px;
-            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            background: linear-gradient(135deg, #1a2f1a, #2d5a2d);
             border-radius: 11px;
             display: flex; align-items: center; justify-content: center;
-            font-size: .7rem; font-weight: 800; color: #fff;
-            line-height: 1.2; text-align: center;
-            box-shadow: 0 0 16px var(--gyo-green-glow);
+            font-size: 1.3rem; line-height: 1;
+            box-shadow: 0 0 16px var(--green-glow);
         }
 
         .mobile-brand .brand-wordmark {
             font-size: 1.2rem;
             font-weight: 800;
-            color: var(--gyo-text);
+            color: var(--text);
         }
 
         /* Form header */
-        .form-header {
-            margin-bottom: 28px;
-        }
+        .form-header { margin-bottom: 28px; }
 
         .form-header h2 {
             font-size: 1.7rem;
@@ -275,18 +274,18 @@
 
         .form-header p {
             font-size: .88rem;
-            color: var(--gyo-muted);
+            color: var(--muted);
             line-height: 1.5;
         }
 
         /* Tab switcher */
         .tab-switch {
             display: flex;
-            background: var(--gyo-card);
+            background: var(--card);
             border-radius: 12px;
             padding: 4px;
             margin-bottom: 24px;
-            border: 1px solid var(--gyo-border);
+            border: 1px solid var(--border);
         }
 
         .tab-btn {
@@ -298,43 +297,39 @@
             text-align: center;
             cursor: pointer;
             text-decoration: none;
-            color: var(--gyo-muted);
+            color: var(--muted);
             transition: color .15s, background .15s;
             border: none;
             background: transparent;
         }
 
         .tab-btn.active {
-            background: var(--gyo-green);
+            background: var(--green);
             color: #fff;
             box-shadow: 0 2px 10px rgba(29,185,84,.3);
         }
 
-        /* Field group */
-        .field {
-            margin-bottom: 16px;
-        }
+        /* Field */
+        .field { margin-bottom: 16px; }
 
         .field label {
             display: block;
             font-size: .78rem;
             font-weight: 600;
-            color: var(--gyo-muted);
+            color: var(--muted);
             text-transform: uppercase;
             letter-spacing: .5px;
             margin-bottom: 6px;
         }
 
-        .input-wrap {
-            position: relative;
-        }
+        .input-wrap { position: relative; }
 
         .input-wrap .input-icon {
             position: absolute;
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--gyo-muted);
+            color: var(--muted);
             font-size: 1rem;
             pointer-events: none;
         }
@@ -344,7 +339,7 @@
             right: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--gyo-muted);
+            color: var(--muted);
             font-size: 1rem;
             cursor: pointer;
             background: none;
@@ -355,50 +350,40 @@
 
         .form-input {
             width: 100%;
-            background: var(--gyo-card);
-            border: 1.5px solid var(--gyo-border);
+            background: var(--card);
+            border: 1.5px solid var(--border);
             border-radius: 12px;
             padding: 12px 44px 12px 44px;
             font-size: .95rem;
-            color: var(--gyo-text);
+            color: var(--text);
             font-family: 'Inter', sans-serif;
             outline: none;
             transition: border-color .15s, box-shadow .15s;
             -webkit-appearance: none;
         }
 
-        .form-input.no-icon {
-            padding-left: 14px;
-        }
+        .form-input.no-icon { padding-left: 14px; }
 
         .form-input:focus {
-            border-color: var(--gyo-green);
+            border-color: var(--green);
             box-shadow: 0 0 0 3px rgba(29,185,84,.12);
         }
 
-        .form-input::placeholder {
-            color: rgba(136,150,179,.45);
-        }
+        .form-input::placeholder { color: rgba(136,150,179,.45); }
+        .form-input.has-error { border-color: var(--red); }
 
-        .form-input.has-error {
-            border-color: var(--gyo-red);
-        }
-
-        /* Phone input â€” country prefix + number */
-        .phone-row {
-            display: flex;
-            gap: 8px;
-        }
+        /* Phone row */
+        .phone-row { display: flex; gap: 8px; }
 
         .phone-row .phone-prefix {
             flex-shrink: 0;
             width: 88px;
-            background: var(--gyo-card2);
-            border: 1.5px solid var(--gyo-border);
+            background: var(--card2);
+            border: 1.5px solid var(--border);
             border-radius: 12px;
             padding: 12px 8px;
             font-size: .95rem;
-            color: var(--gyo-text);
+            color: var(--text);
             font-family: 'Inter', sans-serif;
             outline: none;
             text-align: center;
@@ -407,15 +392,13 @@
         }
 
         .phone-row .phone-prefix:focus {
-            border-color: var(--gyo-green);
+            border-color: var(--green);
             box-shadow: 0 0 0 3px rgba(29,185,84,.12);
         }
 
-        .phone-row .phone-number {
-            flex: 1;
-        }
+        .phone-row .phone-number { flex: 1; }
 
-        /* Error/success alerts */
+        /* Alerts */
         .alert {
             display: flex;
             align-items: flex-start;
@@ -444,7 +427,7 @@
         /* Submit button */
         .submit-btn {
             width: 100%;
-            background: linear-gradient(135deg, var(--gyo-green-dark), var(--gyo-green));
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
             color: #fff;
             border: none;
             border-radius: 14px;
@@ -479,29 +462,29 @@
             content: '';
             flex: 1;
             height: 1px;
-            background: var(--gyo-border);
+            background: var(--border);
         }
 
         .divider span {
             font-size: .75rem;
-            color: var(--gyo-muted);
+            color: var(--muted);
             white-space: nowrap;
         }
 
-        /* Telegram login option */
+        /* Telegram button */
         .tg-btn {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             width: 100%;
-            background: var(--gyo-card);
-            border: 1.5px solid var(--gyo-border);
+            background: var(--card);
+            border: 1.5px solid var(--border);
             border-radius: 14px;
             padding: 12px;
             font-size: .9rem;
             font-weight: 600;
-            color: var(--gyo-text);
+            color: var(--text);
             text-decoration: none;
             transition: border-color .15s, background .15s;
         }
@@ -523,7 +506,7 @@
         /* Helper text */
         .helper-text {
             font-size: .78rem;
-            color: var(--gyo-muted);
+            color: var(--muted);
             margin-top: 6px;
             line-height: 1.4;
         }
@@ -531,13 +514,13 @@
         /* Terms note */
         .terms-note {
             font-size: .72rem;
-            color: var(--gyo-muted);
+            color: var(--muted);
             text-align: center;
             margin-top: 16px;
             line-height: 1.5;
         }
 
-        /* Sign-up bonus badge */
+        /* Bonus badge */
         .bonus-badge {
             display: flex;
             align-items: center;
@@ -557,19 +540,17 @@
         }
 
         .bonus-badge .bb-text strong {
-            color: var(--gyo-gold);
+            color: var(--gold);
             font-weight: 700;
         }
 
-        /* Password strength meter */
-        .pw-strength {
-            margin-top: 8px;
-        }
+        /* Password strength */
+        .pw-strength { margin-top: 8px; }
 
         .pw-strength-bar {
             height: 3px;
             border-radius: 2px;
-            background: var(--gyo-border);
+            background: var(--border);
             overflow: hidden;
             margin-bottom: 4px;
         }
@@ -581,15 +562,12 @@
             transition: width .3s, background .3s;
         }
 
-        .pw-strength-label {
-            font-size: .72rem;
-            color: var(--gyo-muted);
-        }
+        .pw-strength-label { font-size: .72rem; color: var(--muted); }
 
-        /* Optional ref code */
+        /* Ref code toggle */
         .ref-code-toggle {
             font-size: .8rem;
-            color: var(--gyo-green);
+            color: var(--green);
             cursor: pointer;
             font-weight: 600;
             text-decoration: none;
@@ -602,21 +580,21 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* Footer links */
+        /* Auth footer */
         .auth-footer {
             margin-top: 24px;
             text-align: center;
             font-size: .82rem;
-            color: var(--gyo-muted);
+            color: var(--muted);
         }
 
         .auth-footer a {
-            color: var(--gyo-green);
+            color: var(--green);
             text-decoration: none;
             font-weight: 600;
         }
 
-        /* Spinner for loading state */
+        /* Spinner */
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinner {
             width: 18px; height: 18px;
@@ -632,77 +610,78 @@
 
 <div class="auth-shell">
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-         LEFT PANEL â€” branding / marketing
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══ LEFT PANEL — branding / marketing ═══ -->
     <div class="auth-left">
 
         <div class="left-brand">
-            <div class="logo-mark">çŽ‰<br>éœ²</div>
+            <div class="logo-mark">🐼</div>
             <div class="brand-wordmark">KKKPH</div>
-            <h1>Grow your wealth.<br><span class="accent">Elite returns.</span></h1>
-            <p>KKKPH is your gateway to smart daily earnings. Invest in our premium plans and watch your money grow every day.</p>
+        </div>
+
+        <div class="left-hero">
+            <div class="hero-tag">Premium Investment Platform</div>
+            <h1>Grow your wealth.<br><span class="accent">Sip the returns.</span></h1>
+            <p>KKKPH is your gateway to smart daily earnings. Choose a plan, invest, and watch your money grow every day.</p>
 
             <!-- Mini plan showcase -->
             <div class="plan-showcase">
                 <div class="plan-mini">
                     <div class="pm-name">Starter</div>
                     <div class="pm-roi">2.0%</div>
-                    <div class="pm-dur">per day Â· 30d</div>
+                    <div class="pm-dur">per day · 30d</div>
                 </div>
                 <div class="plan-mini">
                     <div class="pm-name">Gold</div>
                     <div class="pm-roi">3.0%</div>
-                    <div class="pm-dur">per day Â· 45d</div>
+                    <div class="pm-dur">per day · 45d</div>
                 </div>
                 <div class="plan-mini">
                     <div class="pm-name">Diamond</div>
                     <div class="pm-roi">4.0%</div>
-                    <div class="pm-dur">per day Â· 90d</div>
+                    <div class="pm-dur">per day · 90d</div>
                 </div>
             </div>
 
             <div class="feature-list">
                 <div class="feature-item">
-                    <div class="fi-icon">ðŸ’°</div>
-                    <div class="fi-text"><strong>Daily returns</strong> â€” earnings credited every day during your plan.</div>
+                    <div class="fi-icon">💰</div>
+                    <div class="fi-text"><strong>Daily returns</strong> — earnings credited every day during your plan.</div>
                 </div>
                 <div class="feature-item">
-                    <div class="fi-icon">ðŸŽ</div>
-                    <div class="fi-text"><strong>â‚±50 welcome bonus</strong> â€” credited instantly when you register.</div>
+                    <div class="fi-icon">🎁</div>
+                    <div class="fi-text"><strong>₱50 welcome bonus</strong> — credited instantly when you register.</div>
                 </div>
                 <div class="feature-item">
-                    <div class="fi-icon">ðŸ‘¥</div>
-                    <div class="fi-text"><strong>Referral commissions</strong> â€” earn when your friends invest.</div>
+                    <div class="fi-icon">👥</div>
+                    <div class="fi-text"><strong>Referral commissions</strong> — earn when your friends invest.</div>
                 </div>
                 <div class="feature-item">
-                    <div class="fi-icon">ðŸ”’</div>
-                    <div class="fi-text"><strong>Capital returned</strong> â€” principal paid back at plan completion.</div>
+                    <div class="fi-icon">🔒</div>
+                    <div class="fi-text"><strong>Capital returned</strong> — principal paid back at plan completion.</div>
                 </div>
             </div>
         </div>
 
         <div class="left-footer">
-            © 2026 KKKPH · All rights reserved
+            &copy; 2026 KKKPH &middot; All rights reserved
         </div>
     </div>
 
-    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-         RIGHT PANEL â€” auth form
-    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <!-- ═══ RIGHT PANEL — auth form ═══ -->
     <div class="auth-right">
         <div class="auth-form-wrap">
 
-            <!-- Mobile brand -->
+            <!-- Mobile brand header -->
             <div class="mobile-brand">
-                <div class="logo-mark">çŽ‰<br>éœ²</div>
+                <div class="logo-mark">🐼</div>
                 <div class="brand-wordmark">KKKPH</div>
             </div>
+
             <!-- Form header -->
             <div class="form-header">
                 {% if mode == 'register' %}
                 <h2>Create account</h2>
-                <p>Get your â‚±50 welcome bonus and start earning today.</p>
+                <p>Get your &#8369;50 welcome bonus and start earning today.</p>
                 {% else %}
                 <h2>Welcome back</h2>
                 <p>Sign in to your KKKPH account.</p>
@@ -721,7 +700,7 @@
                 </a>
             </div>
 
-            <!-- Error alert -->
+            <!-- Alerts -->
             {% if error %}
             <div class="alert alert-error" role="alert">
                 <i class="bi bi-exclamation-circle-fill"></i>
@@ -729,7 +708,6 @@
             </div>
             {% endif %}
 
-            <!-- Flash messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% for cat, msg in messages %}
             <div class="alert {% if cat == 'success' %}alert-success{% else %}alert-error{% endif %}" role="alert">
@@ -739,142 +717,101 @@
             {% endfor %}
             {% endwith %}
 
-            <!-- â”€â”€ REGISTER FORM â”€â”€ -->
+            <!-- ── REGISTER FORM ── -->
             {% if mode == 'register' %}
 
-            <!-- Welcome bonus badge -->
             <div class="bonus-badge">
-                <div class="bb-icon">ðŸŽ</div>
+                <div class="bb-icon">🎁</div>
                 <div class="bb-text">
-                    Register now and receive a <strong>â‚±50 welcome bonus</strong> instantly â€” no deposit required.
+                    Register now and receive a <strong>&#8369;50 welcome bonus</strong> instantly &mdash; no deposit required.
                 </div>
             </div>
 
             <form method="POST" action="{{ url_for('portal.portal_register') }}" id="registerForm" novalidate>
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-                <!-- Full name -->
                 <div class="field">
                     <label for="full_name">Full Name</label>
                     <div class="input-wrap">
                         <i class="bi bi-person input-icon"></i>
-                        <input
-                            type="text"
-                            id="full_name"
-                            name="full_name"
-                            class="form-input"
-                            placeholder="Juan dela Cruz"
-                            value="{{ request.form.get('full_name', '') }}"
-                            autocomplete="name"
-                            maxlength="80"
-                        >
+                        <input type="text" id="full_name" name="full_name" class="form-input"
+                               placeholder="Juan dela Cruz"
+                               value="{{ request.form.get('full_name', '') }}"
+                               autocomplete="name" maxlength="80">
                     </div>
                 </div>
 
-                <!-- Phone number -->
                 <div class="field">
-                    <label for="phone_number">Phone Number <span style="color:var(--gyo-red);">*</span></label>
+                    <label for="phone_number">Phone Number <span style="color:var(--red);">*</span></label>
                     <div class="phone-row">
                         <select name="phone_prefix" id="phone_prefix" class="phone-prefix" aria-label="Country code">
-                            <option value="+63" {% if not request.form.get('phone_prefix') or request.form.get('phone_prefix') == '+63' %}selected{% endif %}>ðŸ‡µðŸ‡­ +63</option>
-                            <option value="+1"  {% if request.form.get('phone_prefix') == '+1' %}selected{% endif %}>ðŸ‡ºðŸ‡¸ +1</option>
-                            <option value="+44" {% if request.form.get('phone_prefix') == '+44' %}selected{% endif %}>ðŸ‡¬ðŸ‡§ +44</option>
-                            <option value="+61" {% if request.form.get('phone_prefix') == '+61' %}selected{% endif %}>ðŸ‡¦ðŸ‡º +61</option>
-                            <option value="+65" {% if request.form.get('phone_prefix') == '+65' %}selected{% endif %}>ðŸ‡¸ðŸ‡¬ +65</option>
-                            <option value="+971" {% if request.form.get('phone_prefix') == '+971' %}selected{% endif %}>ðŸ‡¦ðŸ‡ª +971</option>
-                            <option value="+60" {% if request.form.get('phone_prefix') == '+60' %}selected{% endif %}>ðŸ‡²ðŸ‡¾ +60</option>
-                            <option value="+81" {% if request.form.get('phone_prefix') == '+81' %}selected{% endif %}>ðŸ‡¯ðŸ‡µ +81</option>
-                            <option value="+82" {% if request.form.get('phone_prefix') == '+82' %}selected{% endif %}>ðŸ‡°ðŸ‡· +82</option>
-                            <option value="+86" {% if request.form.get('phone_prefix') == '+86' %}selected{% endif %}>ðŸ‡¨ðŸ‡³ +86</option>
+                            <option value="+63" {% if not request.form.get('phone_prefix') or request.form.get('phone_prefix') == '+63' %}selected{% endif %}>&#127477;&#127469; +63</option>
+                            <option value="+1"  {% if request.form.get('phone_prefix') == '+1' %}selected{% endif %}>&#127482;&#127480; +1</option>
+                            <option value="+44" {% if request.form.get('phone_prefix') == '+44' %}selected{% endif %}>&#127468;&#127463; +44</option>
+                            <option value="+61" {% if request.form.get('phone_prefix') == '+61' %}selected{% endif %}>&#127462;&#127482; +61</option>
+                            <option value="+65" {% if request.form.get('phone_prefix') == '+65' %}selected{% endif %}>&#127480;&#127468; +65</option>
+                            <option value="+971" {% if request.form.get('phone_prefix') == '+971' %}selected{% endif %}>&#127462;&#127466; +971</option>
+                            <option value="+60" {% if request.form.get('phone_prefix') == '+60' %}selected{% endif %}>&#127474;&#127486; +60</option>
+                            <option value="+81" {% if request.form.get('phone_prefix') == '+81' %}selected{% endif %}>&#127471;&#127477; +81</option>
+                            <option value="+82" {% if request.form.get('phone_prefix') == '+82' %}selected{% endif %}>&#127472;&#127479; +82</option>
+                            <option value="+86" {% if request.form.get('phone_prefix') == '+86' %}selected{% endif %}>&#127464;&#127475; +86</option>
                         </select>
                         <div class="input-wrap phone-number">
                             <i class="bi bi-telephone input-icon"></i>
-                            <input
-                                type="tel"
-                                id="phone_number"
-                                name="phone_number"
-                                class="form-input {% if error and 'phone' in (error|lower) %}has-error{% endif %}"
-                                placeholder="9171234567"
-                                value="{{ request.form.get('phone_number', '') }}"
-                                required
-                                autocomplete="tel-national"
-                                inputmode="tel"
-                                maxlength="15"
-                            >
+                            <input type="tel" id="phone_number" name="phone_number"
+                                   class="form-input {% if error and 'phone' in (error|lower) %}has-error{% endif %}"
+                                   placeholder="9171234567"
+                                   value="{{ request.form.get('phone_number', '') }}"
+                                   required autocomplete="tel-national" inputmode="tel" maxlength="15">
                         </div>
                     </div>
                     <p class="helper-text">Enter your number without the country code prefix.</p>
                 </div>
 
-                <!-- Password -->
                 <div class="field">
-                    <label for="password">Password <span style="color:var(--gyo-red);">*</span></label>
+                    <label for="reg_password">Password <span style="color:var(--red);">*</span></label>
                     <div class="input-wrap">
                         <i class="bi bi-lock input-icon"></i>
-                        <input
-                            type="password"
-                            id="reg_password"
-                            name="password"
-                            class="form-input"
-                            placeholder="At least 6 characters"
-                            required
-                            autocomplete="new-password"
-                            minlength="6"
-                            oninput="checkPwStrength(this.value)"
-                        >
+                        <input type="password" id="reg_password" name="password" class="form-input"
+                               placeholder="At least 6 characters"
+                               required autocomplete="new-password" minlength="6"
+                               oninput="checkPwStrength(this.value)">
                         <button type="button" class="toggle-pw" onclick="togglePw('reg_password', this)" aria-label="Show password">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
                     <div class="pw-strength" id="pwStrength">
-                        <div class="pw-strength-bar">
-                            <div class="pw-strength-fill" id="pwFill"></div>
-                        </div>
+                        <div class="pw-strength-bar"><div class="pw-strength-fill" id="pwFill"></div></div>
                         <div class="pw-strength-label" id="pwLabel"></div>
                     </div>
                 </div>
 
-                <!-- Confirm password -->
                 <div class="field">
-                    <label for="confirm_password">Confirm Password <span style="color:var(--gyo-red);">*</span></label>
+                    <label for="confirm_password">Confirm Password <span style="color:var(--red);">*</span></label>
                     <div class="input-wrap">
                         <i class="bi bi-lock-fill input-icon"></i>
-                        <input
-                            type="password"
-                            id="confirm_password"
-                            name="confirm_password"
-                            class="form-input"
-                            placeholder="Repeat your password"
-                            required
-                            autocomplete="new-password"
-                        >
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input"
+                               placeholder="Repeat your password"
+                               required autocomplete="new-password">
                         <button type="button" class="toggle-pw" onclick="togglePw('confirm_password', this)" aria-label="Show password">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Referral code (optional, collapsible) -->
                 <div id="refToggleWrap">
                     <button type="button" class="ref-code-toggle" onclick="showRefField()" id="refToggleBtn">
                         <i class="bi bi-plus-circle"></i> Have a referral code?
                     </button>
                 </div>
                 <div class="field" id="refField" style="display:none;">
-                    <label for="ref_code">Referral Code <span style="color:var(--gyo-muted);font-weight:400;">(optional)</span></label>
+                    <label for="ref_code">Referral Code <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
                     <div class="input-wrap">
                         <i class="bi bi-gift input-icon"></i>
-                        <input
-                            type="text"
-                            id="ref_code"
-                            name="ref_code"
-                            class="form-input"
-                            placeholder="Enter code"
-                            value="{{ request.form.get('ref_code', '') or (request.args.get('ref', '')) }}"
-                            autocomplete="off"
-                            maxlength="20"
-                            style="text-transform:uppercase;"
-                        >
+                        <input type="text" id="ref_code" name="ref_code" class="form-input"
+                               placeholder="Enter code"
+                               value="{{ request.form.get('ref_code', '') or (request.args.get('ref', '')) }}"
+                               autocomplete="off" maxlength="20" style="text-transform:uppercase;">
                     </div>
                 </div>
 
@@ -890,46 +827,33 @@
                 </p>
             </form>
 
-            <!-- â”€â”€ LOGIN FORM â”€â”€ -->
+            <!-- ── LOGIN FORM ── -->
             {% else %}
 
             <form method="POST" action="{{ url_for('portal.portal_login_page') }}" id="loginForm" novalidate>
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-                <!-- Phone number -->
                 <div class="field">
-                    <label for="phone">Phone Number <span style="color:var(--gyo-red);">*</span></label>
+                    <label for="login_phone">Phone Number <span style="color:var(--red);">*</span></label>
                     <div class="input-wrap">
                         <i class="bi bi-telephone input-icon"></i>
-                        <input
-                            type="tel"
-                            id="login_phone"
-                            name="phone"
-                            class="form-input {% if error %}has-error{% endif %}"
-                            placeholder="+63 917 123 4567"
-                            value="{{ request.form.get('phone', '') }}"
-                            required
-                            autocomplete="tel"
-                            inputmode="tel"
-                        >
+                        <input type="tel" id="login_phone" name="phone"
+                               class="form-input {% if error %}has-error{% endif %}"
+                               placeholder="+63 917 123 4567"
+                               value="{{ request.form.get('phone', '') }}"
+                               required autocomplete="tel" inputmode="tel">
                     </div>
                     <p class="helper-text">Include your country code, e.g. <code style="background:rgba(136,150,179,.15);padding:1px 5px;border-radius:4px;font-size:.78rem;">+63 9171234567</code></p>
                 </div>
 
-                <!-- Password -->
                 <div class="field">
-                    <label for="login_password">Password <span style="color:var(--gyo-red);">*</span></label>
+                    <label for="login_password">Password <span style="color:var(--red);">*</span></label>
                     <div class="input-wrap">
                         <i class="bi bi-lock input-icon"></i>
-                        <input
-                            type="password"
-                            id="login_password"
-                            name="password"
-                            class="form-input {% if error %}has-error{% endif %}"
-                            placeholder="Your password"
-                            required
-                            autocomplete="current-password"
-                        >
+                        <input type="password" id="login_password" name="password"
+                               class="form-input {% if error %}has-error{% endif %}"
+                               placeholder="Your password"
+                               required autocomplete="current-password">
                         <button type="button" class="toggle-pw" onclick="togglePw('login_password', this)" aria-label="Show password">
                             <i class="bi bi-eye"></i>
                         </button>
@@ -944,7 +868,7 @@
 
             {% endif %}
 
-            <!-- Divider + Telegram alternative -->
+            <!-- Divider + optional Telegram alternative -->
             <div class="divider"><span>or</span></div>
 
             <a href="https://t.me/{{ bot_username }}" target="_blank" rel="noopener" class="tg-btn">
@@ -952,14 +876,13 @@
                 Continue with Telegram Bot
             </a>
 
-            <!-- Switch mode footer -->
             <div class="auth-footer">
                 {% if mode == 'register' %}
                 Already have an account?
                 <a href="{{ url_for('portal.portal_login_page') }}">Sign in</a>
                 {% else %}
                 Don't have an account?
-                <a href="{{ url_for('portal.portal_register') }}">Create one â€” it's free</a>
+                <a href="{{ url_for('portal.portal_register') }}">Create one &mdash; it's free</a>
                 {% endif %}
             </div>
 
@@ -969,19 +892,17 @@
 </div><!-- /auth-shell -->
 
 <script>
-// â”€â”€ Show/hide password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Show/hide password
 function togglePw(fieldId, btn) {
     const inp = document.getElementById(fieldId);
     if (!inp) return;
     const isHidden = inp.type === 'password';
     inp.type = isHidden ? 'text' : 'password';
     const icon = btn.querySelector('i');
-    if (icon) {
-        icon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
-    }
+    if (icon) icon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
 }
 
-// â”€â”€ Password strength meter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Password strength meter
 function checkPwStrength(pw) {
     const fill = document.getElementById('pwFill');
     const label = document.getElementById('pwLabel');
@@ -992,14 +913,13 @@ function checkPwStrength(pw) {
     if (/[A-Z]/.test(pw)) score++;
     if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
-
     const levels = [
         { w: '0%',   bg: 'transparent', lbl: '' },
-        { w: '25%',  bg: '#EF4444', lbl: 'Weak' },
-        { w: '50%',  bg: '#F59E0B', lbl: 'Fair' },
-        { w: '75%',  bg: '#3B82F6', lbl: 'Good' },
-        { w: '100%', bg: '#1DB954', lbl: 'Strong' },
-        { w: '100%', bg: '#1DB954', lbl: 'Strong' },
+        { w: '25%',  bg: '#EF4444',     lbl: 'Weak' },
+        { w: '50%',  bg: '#F59E0B',     lbl: 'Fair' },
+        { w: '75%',  bg: '#3B82F6',     lbl: 'Good' },
+        { w: '100%', bg: '#1DB954',     lbl: 'Strong' },
+        { w: '100%', bg: '#1DB954',     lbl: 'Strong' },
     ];
     const l = levels[Math.min(score, levels.length - 1)];
     fill.style.width = l.w;
@@ -1008,22 +928,20 @@ function checkPwStrength(pw) {
     label.style.color = l.bg;
 }
 
-// â”€â”€ Referral code toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Referral code toggle
 function showRefField() {
     document.getElementById('refField').style.display = 'block';
     document.getElementById('refToggleWrap').style.display = 'none';
     document.getElementById('ref_code').focus();
 }
 
-// Auto-show ref field if a referral code is pre-filled
+// Auto-show ref field if pre-filled
 (function () {
     const refInput = document.getElementById('ref_code');
-    if (refInput && refInput.value.trim()) {
-        showRefField();
-    }
+    if (refInput && refInput.value.trim()) showRefField();
 })();
 
-// â”€â”€ Build combined phone from prefix + number on register submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Register: combine prefix + number, validate, loading state
 const regForm = document.getElementById('registerForm');
 if (regForm) {
     regForm.addEventListener('submit', function (e) {
@@ -1032,64 +950,46 @@ if (regForm) {
         const combined = prefix + number;
         document.getElementById('phoneHidden').value = combined;
 
-        // Client-side validation
         const pw = document.getElementById('reg_password').value;
         const confirm = document.getElementById('confirm_password').value;
-        if (pw.length < 6) {
-            e.preventDefault();
-            showInlineError('Password must be at least 6 characters.');
-            return;
-        }
-        if (pw !== confirm) {
-            e.preventDefault();
-            showInlineError('Passwords do not match.');
-            return;
-        }
-        if (!number) {
-            e.preventDefault();
-            showInlineError('Please enter your phone number.');
-            return;
-        }
+        if (pw.length < 6) { e.preventDefault(); showInlineError('Password must be at least 6 characters.'); return; }
+        if (pw !== confirm) { e.preventDefault(); showInlineError('Passwords do not match.'); return; }
+        if (!number) { e.preventDefault(); showInlineError('Please enter your phone number.'); return; }
 
-        // Show loading state
         const btn = document.getElementById('regSubmitBtn');
         btn.disabled = true;
-        btn.innerHTML = '<div class="spinner"></div> Creating accountâ€¦';
+        btn.innerHTML = '<div class="spinner"></div> Creating account\u2026';
     });
 }
 
-// â”€â”€ Loading state for login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Login: loading state
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', function () {
         const btn = document.getElementById('loginSubmitBtn');
         btn.disabled = true;
-        btn.innerHTML = '<div class="spinner"></div> Signing inâ€¦';
+        btn.innerHTML = '<div class="spinner"></div> Signing in\u2026';
     });
 }
 
-// â”€â”€ Inline error helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Inline error helper
 function showInlineError(msg) {
-    // Remove existing
     const existing = document.querySelector('.alert.alert-error.inline-err');
     if (existing) existing.remove();
-
     const el = document.createElement('div');
     el.className = 'alert alert-error inline-err';
-    el.innerHTML = `<i class="bi bi-exclamation-circle-fill"></i><span>${msg}</span>`;
-
+    el.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i><span>' + msg + '</span>';
     const form = document.getElementById('registerForm') || document.getElementById('loginForm');
     if (form) {
-        const firstChild = form.firstElementChild;
-        form.insertBefore(el, firstChild);
+        form.insertBefore(el, form.firstElementChild);
         el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
 
-// â”€â”€ Uppercase ref code as user types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const refInput = document.getElementById('ref_code');
-if (refInput) {
-    refInput.addEventListener('input', function () {
+// Uppercase ref code
+const refEl = document.getElementById('ref_code');
+if (refEl) {
+    refEl.addEventListener('input', function () {
         const pos = this.selectionStart;
         this.value = this.value.toUpperCase();
         this.setSelectionRange(pos, pos);
@@ -1099,7 +999,3 @@ if (refInput) {
 
 </body>
 </html>
-
-
-
-
