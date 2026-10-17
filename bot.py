@@ -447,11 +447,56 @@ def main() -> None:
     else:
         log.warning("Web server did not become ready within 10 s — continuing anyway")
 
-    # ── Now start the Telegram bot ────────────────────────────────────
-    app = build_application()
-    register_scheduler(app)
-    log.info("Bot is up. Admin IDs: %s", CONFIG.admin_ids)
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    # ── Start the Telegram bot in a separate thread ───────────────────
+    # Running the bot in its own thread means a Telegram timeout/crash
+    # does NOT kill the web panel. The bot thread retries automatically.
+    def run_bot():
+        """Run the bot with exponential backoff on startup failures.
+
+        A transient Telegram API timeout during initialize()/getMe used to
+        crash the entire process. Now we catch it and retry so the web panel
+        stays up regardless of Telegram availability.
+        """
+        import asyncio
+
+        max_delay = 300   # cap backoff at 5 minutes
+        delay = 5         # start at 5 s
+
+        while True:
+            try:
+                bot_app = build_application()
+                register_scheduler(bot_app)
+                log.info("Bot is up. Admin IDs: %s", CONFIG.admin_ids)
+                # run_polling is blocking; it only returns on keyboard interrupt
+                # or a clean shutdown signal.
+                bot_app.run_polling(
+                    allowed_updates=Update.ALL_TYPES,
+                    drop_pending_updates=True,  # skip stale messages from downtime
+                )
+                # run_polling returned cleanly (e.g. SIGTERM) — exit the loop
+                log.info("Bot polling stopped cleanly.")
+                break
+            except (SystemExit, KeyboardInterrupt):
+                log.info("Bot received shutdown signal — stopping.")
+                break
+            except Exception as exc:
+                log.error(
+                    "Bot crashed (%s: %s) — retrying in %ds…",
+                    type(exc).__name__, exc, delay,
+                )
+                _time.sleep(delay)
+                delay = min(delay * 2, max_delay)
+
+    bot_thread = threading.Thread(target=run_bot, daemon=True, name="telegram-bot")
+    bot_thread.start()
+
+    # ── Keep the main thread alive so the daemon threads keep running ─
+    # We join the web thread (non-daemon pattern) — if it dies, log and exit.
+    # The bot thread is a daemon so it won't block clean shutdown.
+    try:
+        web_thread.join()
+    except KeyboardInterrupt:
+        log.info("Shutdown requested — exiting.")
 
 
 if __name__ == "__main__":
