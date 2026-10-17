@@ -484,9 +484,16 @@ def main() -> None:
         Supervised bot loop. On any network/timeout error: log, back off, retry.
         Only exits on SystemExit (missing token) or KeyboardInterrupt.
 
-        Retry schedule: 5 s → 10 → 20 → 40 → 60 s (capped), then 60 s forever.
+        Retry schedule: 5 s -> 10 -> 20 -> 40 -> 60 s (capped), then 60 s forever.
         """
-        _MAX_DELAY = 60     # cap backoff at 60 s (not 5 min — faster recovery)
+        import asyncio
+
+        # python-telegram-bot's run_polling() drives its own asyncio event loop
+        # internally, but the background thread it runs on has no event loop
+        # by default. Create one and install it before touching PTB at all.
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
+        _MAX_DELAY = 60
         delay = 5
         attempt = 0
 
@@ -532,20 +539,25 @@ def main() -> None:
             ) as exc:
                 log.warning(
                     "Bot attempt #%d failed — Telegram network error (%s: %s). "
-                    "Retrying in %d s…",
+                    "Retrying in %d s...",
                     attempt, type(exc).__name__, exc, delay,
                 )
                 _time.sleep(delay)
                 delay = min(delay * 2, _MAX_DELAY)
+                # Re-create a fresh event loop for the next attempt —
+                # the previous one may be in a broken state.
+                asyncio.set_event_loop(asyncio.new_event_loop())
 
             except Exception as exc:
                 log.error(
                     "Bot attempt #%d crashed unexpectedly (%s: %s). "
-                    "Retrying in %d s…",
+                    "Retrying in %d s...",
                     attempt, type(exc).__name__, exc, delay,
                 )
                 _time.sleep(delay)
                 delay = min(delay * 2, _MAX_DELAY)
+                # Re-create a fresh event loop for the next attempt.
+                asyncio.set_event_loop(asyncio.new_event_loop())
 
     bot_thread = threading.Thread(target=_run_bot, daemon=True, name="telegram-bot")
     bot_thread.start()
