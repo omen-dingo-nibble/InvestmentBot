@@ -117,6 +117,12 @@ def _setup_logging() -> None:
     fh.setFormatter(fmt)
     root.addHandler(fh)
 
+    # httpx and httpcore print full request URLs which include the bot token.
+    # Mute them to WARNING so the token never appears in logs.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("telegram.vendor.ptb_urllib3").setLevel(logging.WARNING)
+
 
 # ---------------------------------------------------------------------------
 # Callback dispatcher
@@ -220,7 +226,26 @@ def build_application() -> Application:
         raise SystemExit(
             "BOT_TOKEN is not set. Copy .env.example to .env and fill in your token."
         )
-    app = ApplicationBuilder().token(CONFIG.bot_token).build()
+    # Build with explicit timeouts so a slow Telegram response does not
+    # immediately raise TimedOut and kill the process.
+    #   connect_timeout  – TCP handshake to api.telegram.org
+    #   read_timeout     – waiting for the response body
+    #   write_timeout    – sending the request body
+    #   pool_timeout     – waiting for a free connection from the pool
+    #   get_updates_*    – longer window for long-poll /getUpdates calls
+    app = (
+        ApplicationBuilder()
+        .token(CONFIG.bot_token)
+        .connect_timeout(30.0)
+        .read_timeout(30.0)
+        .write_timeout(30.0)
+        .pool_timeout(30.0)
+        .get_updates_connect_timeout(30.0)
+        .get_updates_read_timeout(60.0)
+        .get_updates_write_timeout(30.0)
+        .get_updates_pool_timeout(30.0)
+        .build()
+    )
 
     # ---- Investor deposit flow ----
     deposit_handler = ConversationHandler(
@@ -404,23 +429,25 @@ def build_application() -> Application:
 def main() -> None:
     _setup_logging()
     log.info("Starting TGInvestmentBot…")
-    # Eagerly initialise DB so seeding errors show up at startup
+
+    # Eagerly initialise DB so seeding errors show up at startup, not mid-request.
     get_db()
 
+    import threading
+    import socket
+    import time as _time
+    import telegram.error
+
     web_host = os.environ.get("WEB_HOST", "0.0.0.0")
-    # Railway injects PORT; fall back to WEB_PORT then 5000
+    # Railway injects PORT; fall back to WEB_PORT then 5000.
     web_port = int(os.environ.get("PORT") or os.environ.get("WEB_PORT") or "5000")
 
-    # ── Start Flask FIRST so Railway's health check gets a response ──
-    # Railway sends an HTTP probe to $PORT almost immediately after the
-    # process starts. If nothing is bound yet it returns 502. We start
-    # the web server in a thread and give it a moment to bind before
-    # we start the (blocking) Telegram bot.
-    import threading, socket, time as _time
-
+    # ── 1. Start Flask web panel (non-daemon so it keeps the process alive) ──
+    # Railway sends an HTTP health-check to $PORT almost immediately after the
+    # process starts. The web server MUST answer before any Telegram call is made.
     web_app = create_app()
 
-    def run_web():
+    def _run_web() -> None:
         try:
             from werkzeug.serving import make_server
             srv = make_server(web_host, web_port, web_app, threaded=True)
@@ -429,17 +456,16 @@ def main() -> None:
         except Exception as exc:
             log.exception("Web server crashed: %s", exc)
 
-    web_thread = threading.Thread(target=run_web, daemon=True, name="web-server")
+    # Non-daemon: the main thread will join() this, keeping the process alive.
+    web_thread = threading.Thread(target=_run_web, daemon=False, name="web-server")
     web_thread.start()
 
-    # Wait until the port is actually open (max 10 s) before starting the bot.
-    # This prevents the bot from consuming all startup time while Railway
-    # probes the port and receives connection-refused.
+    # Wait up to 10 s for the port to actually open before touching Telegram.
     deadline = _time.time() + 10
     while _time.time() < deadline:
         try:
-            with socket.create_connection((web_host if web_host != "0.0.0.0" else "127.0.0.1",
-                                           web_port), timeout=0.5):
+            probe_host = "127.0.0.1" if web_host == "0.0.0.0" else web_host
+            with socket.create_connection((probe_host, web_port), timeout=0.5):
                 log.info("Web server is ready on port %d", web_port)
                 break
         except OSError:
@@ -447,56 +473,89 @@ def main() -> None:
     else:
         log.warning("Web server did not become ready within 10 s — continuing anyway")
 
-    # ── Start the Telegram bot in a separate thread ───────────────────
-    # Running the bot in its own thread means a Telegram timeout/crash
-    # does NOT kill the web panel. The bot thread retries automatically.
-    def run_bot():
-        """Run the bot with exponential backoff on startup failures.
+    # ── 2. Run the Telegram bot in a daemon thread with retry + backoff ──
+    # The bot thread is a daemon so it never prevents a clean shutdown.
+    # If it crashes for any network reason, it restarts automatically.
+    # The web panel stays up regardless — its thread is non-daemon and
+    # joined on the main thread below.
 
-        A transient Telegram API timeout during initialize()/getMe used to
-        crash the entire process. Now we catch it and retry so the web panel
-        stays up regardless of Telegram availability.
+    def _run_bot() -> None:
         """
-        import asyncio
+        Supervised bot loop. On any network/timeout error: log, back off, retry.
+        Only exits on SystemExit (missing token) or KeyboardInterrupt.
 
-        max_delay = 300   # cap backoff at 5 minutes
-        delay = 5         # start at 5 s
+        Retry schedule: 5 s → 10 → 20 → 40 → 60 s (capped), then 60 s forever.
+        """
+        _MAX_DELAY = 60     # cap backoff at 60 s (not 5 min — faster recovery)
+        delay = 5
+        attempt = 0
 
         while True:
+            attempt += 1
+            log.info("Bot start attempt #%d", attempt)
             try:
                 bot_app = build_application()
                 register_scheduler(bot_app)
-                log.info("Bot is up. Admin IDs: %s", CONFIG.admin_ids)
-                # run_polling is blocking; it only returns on keyboard interrupt
-                # or a clean shutdown signal.
+                log.info("Bot initialised. Admin IDs: %s", CONFIG.admin_ids)
+
+                # bootstrap_retries=-1 tells PTB to retry getMe indefinitely
+                # on startup before entering the poll loop — no extra code needed
+                # for the very first getMe call. Our outer loop handles crashes
+                # that happen after the bot is already running.
                 bot_app.run_polling(
                     allowed_updates=Update.ALL_TYPES,
-                    drop_pending_updates=True,  # skip stale messages from downtime
+                    drop_pending_updates=True,   # skip messages queued during downtime
+                    bootstrap_retries=-1,        # PTB retries getMe until it succeeds
+                    close_loop=False,            # don't close the event loop on exit
                 )
-                # run_polling returned cleanly (e.g. SIGTERM) — exit the loop
-                log.info("Bot polling stopped cleanly.")
+                # run_polling returned normally — clean shutdown, stop retrying.
+                log.info("Bot polling stopped cleanly — shutting down bot thread.")
                 break
-            except (SystemExit, KeyboardInterrupt):
-                log.info("Bot received shutdown signal — stopping.")
+
+            except SystemExit:
+                # Missing / invalid token — nothing to retry.
+                log.critical("Bot exiting due to missing or invalid token.")
+                raise
+
+            except telegram.error.InvalidToken:
+                log.critical("BOT_TOKEN is invalid — please update it in Railway env vars.")
+                break  # don't loop forever on a bad token
+
+            except KeyboardInterrupt:
+                log.info("Bot thread received KeyboardInterrupt — stopping.")
                 break
-            except Exception as exc:
-                log.error(
-                    "Bot crashed (%s: %s) — retrying in %ds…",
-                    type(exc).__name__, exc, delay,
+
+            except (
+                telegram.error.TimedOut,
+                telegram.error.NetworkError,
+                telegram.error.RetryAfter,
+            ) as exc:
+                log.warning(
+                    "Bot attempt #%d failed — Telegram network error (%s: %s). "
+                    "Retrying in %d s…",
+                    attempt, type(exc).__name__, exc, delay,
                 )
                 _time.sleep(delay)
-                delay = min(delay * 2, max_delay)
+                delay = min(delay * 2, _MAX_DELAY)
 
-    bot_thread = threading.Thread(target=run_bot, daemon=True, name="telegram-bot")
+            except Exception as exc:
+                log.error(
+                    "Bot attempt #%d crashed unexpectedly (%s: %s). "
+                    "Retrying in %d s…",
+                    attempt, type(exc).__name__, exc, delay,
+                )
+                _time.sleep(delay)
+                delay = min(delay * 2, _MAX_DELAY)
+
+    bot_thread = threading.Thread(target=_run_bot, daemon=True, name="telegram-bot")
     bot_thread.start()
 
-    # ── Keep the main thread alive so the daemon threads keep running ─
-    # We join the web thread (non-daemon pattern) — if it dies, log and exit.
-    # The bot thread is a daemon so it won't block clean shutdown.
+    # ── 3. Keep main thread alive by joining the non-daemon web thread ──
+    # If Werkzeug exits (which it shouldn't), the process exits too.
     try:
         web_thread.join()
     except KeyboardInterrupt:
-        log.info("Shutdown requested — exiting.")
+        log.info("Main thread received KeyboardInterrupt — exiting.")
 
 
 if __name__ == "__main__":
